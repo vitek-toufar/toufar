@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2b2119">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Po stopách Toufara">
+<title>Po stopách faráře Josefa Toufara — 4. ročník</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+:root{
+  --ink:#2b2119;          /* tmavá hnědočerná - hlavní text */
+  --ink-soft:#5a4a3a;     /* změklý inkoust */
+  --paper:#efe6d4;        /* pergamen */
+  --paper-2:#e5d9c1;      /* tmavší pergamen */
+  --paper-edge:#d8c9a8;   /* okraj papíru */
+  --accent:#8a3324;       /* pečetní červená (burgundy/rust) */
+  --accent-2:#b5622f;     /* měď */
+  --gold:#9c7a3c;         /* stará mosaz */
+  --line:#c9b48f;         /* linka */
+  --shadow:rgba(43,33,25,.18);
+  --sepia-shadow:rgba(90,60,30,.25);
+  --live:#3f7d4e;         /* zelená živého režimu */
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;overscroll-behavior:none}
+body{
+  font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  color:var(--ink);
+  background:var(--paper);
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(255,255,255,.35), transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(120,90,50,.12), transparent 45%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+}
+/* ---------- App shell ---------- */
+#app{height:100%;display:flex;flex-direction:column;max-width:520px;margin:0 auto;position:relative;background:var(--paper);box-shadow:0 0 40px rgba(0,0,0,.15)}
+
+/* ---------- Header ---------- */
+header{
+  padding:calc(var(--safe-t) + 16px) 18px 14px;
+  background:
+    radial-gradient(ellipse at 85% 20%, rgba(201,168,92,.14), transparent 55%),
+    linear-gradient(180deg,#241a10,#3a2c1f);
+  color:var(--paper);
+  position:relative;overflow:hidden;
+  border-bottom:3px double var(--gold);
+  flex:0 0 auto;
+}
+header::before{content:"✝";position:absolute;right:-14px;bottom:-34px;font-size:120px;color:rgba(201,168,92,.08);pointer-events:none;line-height:1}
+header .kicker{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent-2);font-weight:700;margin:0}
+header h1{margin:3px 0 0;font-size:21px;font-weight:700;letter-spacing:.01em;line-height:1.18;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+header .date{margin:5px 0 0;font-size:12.5px;color:#d9c9a8;font-style:italic;display:flex;align-items:center;gap:8px}
+header .date::before{content:"❦";color:var(--gold);font-style:normal;font-size:13px}
+header .cross{position:absolute;right:16px;top:calc(var(--safe-t) + 14px);font-size:26px;color:var(--gold);opacity:.9;text-shadow:0 0 12px rgba(201,168,92,.5)}
+
+/* ---------- Views ---------- */
+main{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative}
+.view{display:none;padding:16px 16px calc(96px + var(--safe-b))}
+.view.active{display:block}
+#view-map.active{display:block;padding:0;height:100%}
+
+/* ---------- Map ---------- */
+#map{position:absolute;inset:0;height:100%;width:100%}
+.map-overlay{
+  position:absolute;left:12px;right:12px;bottom:calc(84px + var(--safe-b));z-index:500;
+  display:flex;gap:8px;pointer-events:none;
+}
+.map-btn{
+  pointer-events:auto;flex:1;padding:11px 8px;border:none;border-radius:12px;
+  background:rgba(43,33,25,.92);color:var(--paper);font-family:inherit;font-size:13px;font-weight:700;
+  box-shadow:0 4px 14px var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.map-btn.live-on{background:var(--live)}
+.map-btn.locate{flex:0 0 52px}
+.leaflet-popup-content-wrapper{border-radius:12px;background:var(--paper);color:var(--ink);box-shadow:0 6px 24px var(--sepia-shadow)}
+.leaflet-popup-content{margin:12px 14px;font-family:inherit}
+.leaflet-popup-content b{font-size:15px;color:var(--accent)}
+.popup-km{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.popup-actions{margin-top:8px;display:flex;gap:6px}
+.popup-actions a,.popup-actions button{
+  flex:1;text-align:center;text-decoration:none;font-family:inherit;font-size:12px;font-weight:700;
+  padding:7px 6px;border-radius:8px;border:1px solid var(--line);background:var(--paper-2);color:var(--ink);cursor:pointer;
+}
+.popup-actions a.nav{background:var(--accent);color:var(--paper);border-color:var(--accent)}
+
+/* Custom map markers */
+.mk{display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--paper);
+  border-radius:50% 50% 50% 6px;transform:rotate(45deg);box-shadow:0 3px 8px rgba(0,0,0,.35);border:2px solid var(--paper)}
+.mk span{transform:rotate(-45deg);font-size:12px}
+.mk.stop{width:30px;height:30px;background:var(--accent)}
+.mk.side{width:24px;height:24px;background:var(--gold)}
+.mk-me{width:20px;height:20px;background:#2f6fd6;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(47,111,214,.3),0 2px 6px rgba(0,0,0,.4)}
+
+/* POI — hospody a zajímavosti */
+.mk-poi{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;
+  background:#f6efdf;border:2px solid var(--gold);border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.map-btn.poi-on{outline:2px solid var(--gold);outline-offset:-2px}
+
+/* Toufarovo tempo */
+.mk-toufar{display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+.mk-toufar .face{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 32% 28%,#4a3a2a,#241a10);
+  color:#e8d9b8;display:flex;align-items:center;justify-content:center;font-size:19px;border:2.5px solid #c9a85c;
+  animation:toufarGlow 3s ease-in-out infinite}
+.mk-toufar .tag{margin-top:3px;background:#241a10;color:#e8d9b8;border:1px solid #c9a85c;font-size:10px;font-weight:700;
+  padding:1.5px 7px;border-radius:8px;white-space:nowrap;letter-spacing:.04em}
+@keyframes toufarGlow{0%,100%{box-shadow:0 0 0 0 rgba(201,168,92,.45)}50%{box-shadow:0 0 0 7px rgba(201,168,92,0)}}
+.mk-peer{display:flex;flex-direction:column;align-items:center}
+.mk-peer .dot{width:16px;height:16px;background:var(--live);border-radius:50%;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.4)}
+.mk-peer .lbl{margin-top:2px;background:var(--live);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;white-space:nowrap;font-family:sans-serif}
+.mk-peer .emo{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:16px;background:#fff;border:2px solid var(--live);border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,.4)}
+
+/* výběr ikony v modalu */
+.icon-pick{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.icon-pick button{flex:1;min-width:46px;font-size:22px;padding:9px 0;border:2px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;transition:.12s}
+.icon-pick button.sel{border-color:var(--live);background:#eef3e8;transform:scale(1.05)}
+
+/* panel živých poutníků na mapě */
+.peers-panel{position:absolute;right:12px;top:12px;z-index:600;background:rgba(43,33,25,.94);color:var(--paper);
+  border-radius:12px;box-shadow:0 4px 14px var(--shadow);max-width:220px;overflow:hidden;display:none}
+.peers-panel.show{display:block}
+.peers-head{padding:9px 12px;font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.peers-head b{color:var(--live);font-size:14px}
+.peers-list{max-height:180px;overflow-y:auto;border-top:1px solid rgba(255,255,255,.12)}
+.peers-list.collapsed{display:none}
+.peers-list .p{padding:8px 12px;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06)}
+.peers-list .p:last-child{border:none}
+.peers-list .p .e{font-size:15px}
+.peers-list .p .near{margin-left:auto;font-size:11px;color:#c9b48f;font-style:italic}
+.peers-list .empty{padding:10px 12px;font-size:12px;color:#c9b48f;font-style:italic}
+
+/* ---------- Cards / content ---------- */
+.section-title{font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:4px 0 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.section-title::after{content:"❦";flex:1;text-align:right;color:var(--gold);font-size:14px;letter-spacing:0;background:linear-gradient(var(--line),var(--line)) left center/calc(100% - 22px) 1px no-repeat}
+
+.stop-card{
+  background:#f6efdf;
+  border:1px solid var(--paper-edge);
+  border-top:2px solid var(--gold);
+  border-radius:14px;padding:14px;margin-bottom:14px;
+  box-shadow:0 3px 12px var(--shadow), inset 0 1px 0 rgba(255,255,255,.6);position:relative;overflow:visible;
+}
+.stop-card .km-badge{
+  position:absolute;top:0;right:0;background:var(--accent);color:var(--paper);
+  font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 10px;border-radius:0 14px 0 12px;
+}
+.stop-card .num-seal{
+  position:absolute;top:-6px;right:10px;width:38px;height:44px;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 35% 30%, #a8422f, var(--accent) 60%, #6d281c);color:var(--paper);
+  font-size:18px;font-weight:700;
+  clip-path:polygon(50% 0%,95% 12%,100% 55%,82% 95%,50% 100%,18% 95%,0% 55%,5% 12%);
+  box-shadow:0 3px 8px var(--sepia-shadow);text-shadow:0 1px 2px rgba(0,0,0,.35)
+}
+.chip{font-size:10.5px;letter-spacing:.05em;text-transform:none;background:var(--accent);color:var(--paper);
+  padding:3px 10px;border-radius:20px;font-weight:700;box-shadow:0 1px 4px var(--shadow)}
+.stop-card .actions button.speak{flex:0 0 48px;font-size:17px;padding:8px 0}
+.stop-card .actions button.speak.on{background:var(--accent);color:var(--paper);border-color:var(--accent)}
+.stop-card h3{margin:0 40px 2px 0;font-size:16.5px;line-height:1.25}
+.stop-card .gps{font-size:11.5px;color:var(--gold);font-weight:700;letter-spacing:.04em;margin:0 0 8px;font-family:"SF Mono",ui-monospace,monospace}
+.stop-card p{margin:0 0 8px;font-size:14px;color:var(--ink-soft)}
+.stop-card .actions{display:flex;gap:8px;margin-top:10px}
+.stop-card .actions a,.stop-card .actions button{
+  flex:1;text-align:center;text-decoration:none;font-family:inherit;font-weight:700;font-size:13px;
+  padding:9px;border-radius:10px;cursor:pointer;border:1px solid var(--line);background:var(--paper-2);color:var(--ink)
+}
+.stop-card .actions a.nav{background:var(--accent);color:var(--paper);border-color:var(--accent)}
+.stop-card .actions a.show{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.stop-card.done{opacity:.68}
+.stop-card.done .num-seal{background:radial-gradient(circle at 35% 30%, #5a9a68, var(--live) 60%, #2c5a38)}
+.stop-card.done h3::after{content:" ✓";color:var(--live)}
+.stop-card.flash{animation:flashcard 1.6s ease;box-shadow:0 0 0 3px var(--accent),0 4px 16px var(--sepia-shadow)}
+@keyframes flashcard{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 2px 10px var(--shadow)}}
+.stop-card.done h3,.stop-card.done .gps,.stop-card.done p{filter:none}
+
+/* Read-more */
+.more{display:none}
+.more.open{display:block}
+.readmore-btn{background:none;border:none;color:var(--accent);font-family:inherit;font-weight:700;font-size:13px;padding:0;cursor:pointer;text-decoration:underline}
+
+/* ---------- Timeline ---------- */
+.tl{position:relative;padding-left:26px;margin-top:6px}
+.tl::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:linear-gradient(var(--gold),var(--accent))}
+.tl-item{position:relative;margin-bottom:18px}
+.tl-item::before{content:"";position:absolute;left:-22px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--paper);border:3px solid var(--accent)}
+.tl-item.key::before{background:var(--accent)}
+.tl-date{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.04em}
+.tl-item h4{margin:2px 0 3px;font-size:15px}
+.tl-item p{margin:0;font-size:13.5px;color:var(--ink-soft)}
+
+/* ---------- Quests ---------- */
+.score-banner{
+  background:linear-gradient(135deg,var(--accent),#6d281c);color:var(--paper);
+  border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 4px 16px var(--sepia-shadow)
+}
+.score-banner .num{font-size:34px;font-weight:700;line-height:1}
+.score-banner .lbl{font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.85}
+.score-banner .rec{text-align:right;font-size:12px;opacity:.9;font-style:italic}
+.quest{
+  background:#f6efdf;border:1px solid var(--paper-edge);border-radius:12px;padding:12px 14px;margin-bottom:10px;
+  display:flex;align-items:center;gap:12px;box-shadow:0 1px 6px var(--shadow);cursor:pointer;user-select:none
+}
+.quest .check{flex:0 0 26px;height:26px;border-radius:7px;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;color:transparent;transition:.15s}
+.quest.on{background:#eef3e8;border-color:var(--live)}
+.quest.on .check{background:var(--live);border-color:var(--live);color:#fff}
+.quest .body{flex:1}
+.quest .body .t{font-size:14px;font-weight:700;line-height:1.25}
+.quest .body .note{font-size:12px;color:var(--gold);margin-top:2px}
+.quest .pts{flex:0 0 auto;font-size:15px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.quest.counter{cursor:default;flex-wrap:wrap}
+.quest .ctr{display:flex;align-items:center;gap:2px;flex:0 0 auto}
+.quest .ctr button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--paper-2);
+  font-size:20px;font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit;line-height:1}
+.quest .ctr button:active{background:var(--gold);color:#fff}
+.quest .ctr .val{min-width:34px;text-align:center;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.quest.counter .pts{min-width:52px;text-align:right;font-size:13px}
+.send-results{display:block;width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;
+  background:var(--ink);color:var(--paper);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+  box-shadow:0 3px 12px var(--shadow)}
+.send-results:active{background:var(--accent)}
+
+/* ---------- Notes / book ---------- */
+.note-place{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;margin:14px 0 6px}
+textarea.book{
+  width:100%;min-height:120px;border:1px solid var(--paper-edge);border-radius:12px;padding:12px 14px;
+  font-family:inherit;font-size:14.5px;color:var(--ink);background:
+    repeating-linear-gradient(transparent,transparent 27px,var(--line) 27px,var(--line) 28px) 0 6px/100% 28px,
+    #f8f2e4;
+  line-height:28px;resize:vertical;box-shadow:inset 0 1px 4px rgba(0,0,0,.06)
+}
+textarea.book:focus{outline:2px solid var(--accent);outline-offset:1px}
+.saved-flash{font-size:12px;color:var(--live);font-weight:700;opacity:0;transition:.3s;margin-left:8px}
+.saved-flash.show{opacity:1}
+
+/* ---------- Gallery ---------- */
+.gal{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gal figure{margin:0;border-radius:12px;overflow:hidden;background:var(--paper-2);border:1px solid var(--paper-edge);box-shadow:0 2px 8px var(--shadow)}
+.gal img{width:100%;height:130px;object-fit:cover;display:block;background:var(--paper-2)}
+.gal .ph{width:100%;height:130px;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:12px;text-align:center;padding:8px;font-style:italic}
+.gal figcaption{font-size:11.5px;padding:7px 9px;color:var(--ink-soft)}
+
+/* záložky ročníků */
+.year-tabs{display:flex;gap:8px;margin-bottom:12px}
+.year-tabs button{flex:1;padding:10px 0;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);
+  font-family:inherit;font-size:14.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;transition:.15s}
+.year-tabs button.sel{background:var(--accent);border-color:var(--accent);color:var(--paper);box-shadow:0 3px 10px var(--sepia-shadow)}
+
+/* QR pozvánka */
+.share-block{text-align:center}
+.qr-wrap{display:flex;justify-content:center;margin:8px 0 2px}
+#qrBox{background:#f6efdf;padding:10px;border-radius:12px;border:1px solid var(--paper-edge);box-shadow:0 2px 8px var(--shadow);min-width:120px;min-height:60px}
+#qrBox img,#qrBox canvas{display:block;border-radius:4px}
+
+header .chip{margin-left:4px;background:var(--accent-2);font-style:normal}
+
+/* ---------- Recap / info blocks ---------- */
+.block{background:#f6efdf;border:1px solid var(--paper-edge);border-top:2px solid var(--gold);border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 3px 12px var(--shadow), inset 0 1px 0 rgba(255,255,255,.6)}
+.block h3{margin:0 0 6px;font-size:16px;color:var(--accent)}
+.block p{margin:0 0 8px;font-size:14px;color:var(--ink-soft)}
+.block a{color:var(--accent);font-weight:700}
+.pull{font-style:italic;color:var(--ink);border-left:3px solid var(--gold);padding:4px 0 4px 12px;margin:10px 0;font-size:14.5px}
+.linklist{list-style:none;padding:0;margin:6px 0 0}
+.linklist li{padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.linklist li:last-child{border:none}
+.linklist a{text-decoration:none}
+
+/* Live-share setup modal */
+.modal-bg{position:fixed;inset:0;background:rgba(20,14,8,.6);z-index:2000;display:none;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--paper);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:20px 18px calc(24px + var(--safe-b));box-shadow:0 -8px 30px rgba(0,0,0,.3);animation:up .25s ease}
+@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+.modal h3{margin:0 0 4px;font-size:18px}
+.modal p{margin:0 0 12px;font-size:13.5px;color:var(--ink-soft)}
+.modal input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:15px;margin-bottom:10px;background:#fff}
+.modal .row{display:flex;gap:8px}
+.modal button{flex:1;padding:13px;border:none;border-radius:10px;font-family:inherit;font-weight:700;font-size:15px;cursor:pointer}
+.modal .go{background:var(--live);color:#fff}
+.modal .cancel{background:var(--paper-2);color:var(--ink);border:1px solid var(--line)}
+.note-priv{font-size:12px;color:var(--gold);margin-top:10px;line-height:1.4}
+
+/* ---------- Bottom nav ---------- */
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:1000;max-width:520px;margin:0 auto;
+  background:linear-gradient(180deg,#33261b,#2b2119);border-top:2px solid var(--gold);
+  display:flex;padding:6px 4px calc(6px + var(--safe-b));
+}
+nav button{
+  flex:1;background:none;border:none;color:#a89372;font-family:inherit;font-size:10px;font-weight:700;
+  padding:6px 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;letter-spacing:.02em;
+  position:relative;transition:color .15s
+}
+nav button .ic{font-size:19px;line-height:1;transition:transform .15s}
+nav button.active{color:var(--accent-2)}
+nav button.active .ic{transform:translateY(-2px);filter:drop-shadow(0 2px 6px rgba(181,98,47,.55))}
+nav button.active::after{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:26px;height:2.5px;border-radius:0 0 3px 3px;background:var(--accent-2)}
+
+/* misc */
+.tiny{font-size:12px;color:var(--gold);text-align:center;margin:18px 0 0;font-style:italic}
+a.plainlink{color:var(--accent);font-weight:700}
+.hint{background:rgba(138,51,36,.08);border:1px dashed var(--accent);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--ink-soft);margin-bottom:12px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <span class="cross">✝</span>
+    <p class="kicker">Poutní deník · 4. ročník</p>
+    <h1>Po stopách faráře<br>Josefa Toufara</h1>
+    <p class="date">Sobota 11. 7. 2026 · Kamenná Lhota → Číhošť a zpět <span class="chip" id="countdown"></span></p>
+  </header>
+
+  <main>
+
+    <!-- ============ MAPA ============ -->
+    <section id="view-map" class="view active">
+      <div id="map"></div>
+      <div class="peers-panel" id="peersPanel">
+        <div class="peers-head" id="peersHead">
+          <span><b id="peersCount">0</b> poutníků živě</span><span id="peersChevron">▾</span>
+        </div>
+        <div class="peers-list" id="peersList"></div>
+      </div>
+      <div class="map-overlay">
+        <button class="map-btn locate" id="btnLocate" title="Moje poloha">◎</button>
+        <button class="map-btn locate poi-on" id="btnPois" title="Hospody a zajímavosti" onclick="togglePois(this)">🍺</button>
+        <button class="map-btn" id="btnFit">Celá trasa</button>
+        <button class="map-btn" id="btnLive">📡 Sdílet polohu</button>
+      </div>
+    </section>
+
+    <!-- ============ ZASTÁVKY ============ -->
+    <section id="view-stops" class="view">
+      <div class="section-title">Zastávky po cestě <span class="chip" id="visitedChip">Navštíveno 0 z 13</span></div>
+      <div class="hint">Klepnutím na kartu si místo označíš jako navštívené. 🔊 přečte text nahlas — hodí se za jízdy.</div>
+      <div id="stopsList"></div>
+    </section>
+
+    <!-- ============ PŘÍBĚH / ČASOVÁ OSA ============ -->
+    <section id="view-story" class="view">
+      <div class="section-title">Příběh Josefa Toufara</div>
+      <div class="block">
+        <p>Statečný katolický kněz, umučený komunistickou StB. Tato trasa vede po místech jeho života i posledních dnů — od farnosti Zahrádka až po Číhošť, kde se roku 1949 odehrál „číhošťský zázrak".</p>
+        <p class="pull">„Žijme tak, jako bychom již dnes zemřít měli. Žijme pečlivě jako moudří a vykupujme si časem vezdejším život věčný."</p>
+      </div>
+      <div class="tl" id="timeline"></div>
+    </section>
+
+    <!-- ============ SOUTĚŽ ============ -->
+    <section id="view-quest" class="view">
+      <div class="section-title">Bodovaná soutěž</div>
+      <div class="score-banner">
+        <div><div class="num" id="scoreNum">0</div><div class="lbl">bodů</div></div>
+        <div class="rec">Loňský rekord:<br><b>Vítek — 196 b.</b></div>
+      </div>
+      <div class="hint">Odškrtávej úkoly během dne — body se počítají samy a drží se v telefonu. Tlačítkem dole pošleš Vítkovi <b>výsledky i se svými poznámkami z knihy</b>.</div>
+      <div id="questList"></div>
+    </section>
+
+    <!-- ============ KNIHA / POZNÁMKY ============ -->
+    <section id="view-notes" class="view">
+      <div class="section-title">Poznámky do knihy</div>
+      <div class="hint">„Do knihy je doporučeno psát, ať vzpomínky časem nevyblednou." Vše se ukládá do telefonu automaticky — a <b>poznámky se přibalí k výsledkům soutěže</b>, když je na konci dne pošleš Vítkovi.</div>
+      <div id="notesList"></div>
+    </section>
+
+    <!-- ============ GALERIE + INFO ============ -->
+    <section id="view-more" class="view">
+      <div class="section-title">Minulé výpravy</div>
+      <div class="year-tabs" id="yearTabs"></div>
+      <div id="yearContent"></div>
+
+      <div class="section-title" style="margin-top:20px">Pozvi další poutníky</div>
+      <div class="block share-block">
+        <p>Ukaž sousedovi QR kód, nebo mu pošli odkaz — appku tím dostane každý do svého telefonu.</p>
+        <div class="qr-wrap"><div id="qrBox"></div></div>
+        <button class="send-results" id="btnShareApp" style="margin-top:10px">📲 Sdílet odkaz na appku</button>
+        <p class="note-priv" id="shareHint" style="display:none">QR kód a sdílení začnou fungovat, jakmile appka poběží na internetové adrese (GitHub Pages / Netlify).</p>
+      </div>
+
+      <div class="section-title" style="margin-top:20px">Poznej Toufarův příběh hlouběji</div>
+      <div class="block">
+        <p>Smyslem putování je šíření povědomí o osudu P. Josefa Toufara — jedné z prvních obětí komunistického režimu a vedle Milady Horákové nejvýmluvnějšího symbolu totalitní zvůle u nás.</p>
+      </div>
+      <ul class="linklist">
+        <li><a class="plainlink" href="http://joseftoufar.cz/" target="_blank" rel="noopener">joseftoufar.cz — oficiální stránky o faráři →</a></li>
+        <li><a class="plainlink" href="https://cs.wikipedia.org/wiki/Josef_Toufar" target="_blank" rel="noopener">Wikipedie: Josef Toufar →</a></li>
+        <li><a class="plainlink" href="https://www.pametnaroda.cz/" target="_blank" rel="noopener">Paměť národa — svědectví pamětníků →</a></li>
+        <li><a class="plainlink" href="https://www.ustrcr.cz/" target="_blank" rel="noopener">Ústav pro studium totalitních režimů →</a></li>
+      </ul>
+
+      <div class="section-title" style="margin-top:20px">Knihy Miloše Doležala</div>
+      <ul class="linklist">
+        <li>📕 <b>Jako bychom dnes zemřít měli</b> — životopis P. Toufara, Kniha roku 2012 (existuje i audiokniha na Radiotéce)</li>
+        <li>📗 <b>Krok do tmavé noci</b> — okolnosti smrti, výslechy StB a exhumace ostatků (2016)</li>
+        <li>📘 <b>Toufar — průvodce po místech</b> spojených se životem umučeného kněze; 120 zastavení od Arnolce po Číhošť</li>
+        <li>K dostání též v Kavárně Kovárna v Ledči nad Sázavou</li>
+      </ul>
+
+      <div class="section-title" style="margin-top:20px">Filmy a pořady</div>
+      <ul class="linklist">
+        <li>🎬 Krátký dokument v cyklu <b>Slavné dny</b> (Stream.cz) — rychlé shrnutí i pro děti</li>
+        <li>🎬 Propagandistický film StB <b>„Běda tomu, skrze něhož přichází pohoršení"</b> — do jeho natáčení byl zbědovaný Toufar zneužit</li>
+        <li>🎧 Pořady Českého rozhlasu (Vltava, Plus) o Toufarovi a číhošťském zázraku</li>
+      </ul>
+
+      <div class="section-title" style="margin-top:20px">Občerstvení dál po trase</div>
+      <ul class="linklist">
+        <li>Kouty (odbočka z 19. km — hotel Luna: jídlo, pivo, sauna na vodě) · Stvořidla (odbočka z 24. km) · Pavlov (44. km) · Vilémovice (46. km) · Sluneční zátoka (48. km)</li>
+        <li>Hospody po cestě: Kaliště, Lipnice, na cyklostezce kousek od Lipničky, mezi Koňkovicemi a Bilantovou Lhotou</li>
+      </ul>
+
+      <div class="section-title" style="margin-top:20px">Další zajímavá místa</div>
+      <ul class="linklist">
+        <li><b>Lipnice nad Sázavou</b> — výhled z hradeb a hospoda Jaroslava Haška</li>
+        <li><a class="plainlink" href="https://8smicka.com/" target="_blank" rel="noopener">Národní památník odposlechu →</a> — Bretschneidrovo ucho, Ústa pravdy a Zlaté oči vytesané v žulových lomech na paměť špiclování za bývalých režimů; v lomech se dá koupat</li>
+        <li><a class="plainlink" href="https://www.vodni-dum.cz/" target="_blank" rel="noopener">Vodní dům u Švihova →</a></li>
+        <li><a class="plainlink" href="https://www.pivovarsvihov.cz/" target="_blank" rel="noopener">Pivovar Švihov →</a></li>
+        <li><a class="plainlink" href="https://www.navstivtebernard.cz/cs/pivnice" target="_blank" rel="noopener">Pivnice Bernard →</a></li>
+        <li>Peřeje <b>Stvořidla</b> a malebná krajina podél Sázavy — jezdí tudy Posázavský Pacifik, dá se koupat</li>
+        <li><b>Sluneční zátoka</b> — legendární foglarovské tábořiště Hochů od Bobří řeky s pomníkem spisovatele; trasa vede přímo kolem (48. km)</li>
+      </ul>
+
+      <div class="section-title" style="margin-top:20px">Alternativní trasy</div>
+      <ul class="linklist">
+        <li><a class="plainlink" href="https://mapy.com/s/potosomevu" target="_blank" rel="noopener">🚲 Cyklotrasa č. 2 „Koupací" →</a></li>
+        <li><a class="plainlink" href="https://mapy.com/s/bumomelumo" target="_blank" rel="noopener">🥾 Trasa pro pěší →</a></li>
+        <li><a class="plainlink" href="https://mapy.com/s/jaburabaco" target="_blank" rel="noopener">👨‍👩‍👧 Dětský okruh (10 km) →</a></li>
+        <li><a class="plainlink" href="https://mapy.com/s/ladabogora" target="_blank" rel="noopener">🏍️ Trasa pro motorkáře do rodného domu →</a></li>
+      </ul>
+
+      <p class="tiny">Připomínka narození J. Toufara (* 14. 7. 1902) · v Číhošti buď nejpozději v 16:00</p>
+    </section>
+
+  </main>
+
+  <nav>
+    <button data-view="map" class="active"><span class="ic">🗺️</span>Mapa</button>
+    <button data-view="stops"><span class="ic">📍</span>Zastávky</button>
+    <button data-view="story"><span class="ic">📜</span>Příběh</button>
+    <button data-view="quest"><span class="ic">🏆</span>Soutěž</button>
+    <button data-view="notes"><span class="ic">📖</span>Kniha</button>
+    <button data-view="more"><span class="ic">🖼️</span>Víc</button>
+  </nav>
+</div>
+
+<!-- Live-share modal -->
+<div class="modal-bg" id="liveModal">
+  <div class="modal">
+    <h3>Sdílet polohu s poutníky</h3>
+    <p>Zapni jen když chceš, aby ostatní viděli, kde jsi. Ostatní uvidíš také. Kdykoli lze vypnout.</p>
+    <input id="nickInput" placeholder="Tvoje přezdívka (např. Vítek)" maxlength="18" autocomplete="off">
+    <div class="icon-pick" id="iconPick"></div>
+    <input id="groupInput" placeholder="Kód skupiny (např. toufar2026)" value="toufar2026" maxlength="24" autocomplete="off">
+    <div class="row">
+      <button class="cancel" id="liveCancel">Zpět</button>
+      <button class="go" id="liveGo">Začít sdílet</button>
+    </div>
+    <p class="note-priv">🔒 Poloha se sdílí jen s lidmi se stejným kódem skupiny a jen dokud je sdílení zapnuté. Nic se neukládá po skončení akce.</p>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   DATA — všechny zastávky, texty a GPS z almanachu (kniha 2024)
+   ================================================================ */
+const STOPS = [
+  {id:'kl', km:0, name:'Kamenná Lhota — Zemljanka', lat:49.6435461, lng:15.2772831,
+   text:'V malebném koutě Vysočiny, na úpatí vrchu Vlčí hůra a z východní strany zaštítěná majestátním Melechovem, se rozkládá obec Kamenná Lhota. Obec je neprůjezdná a to jí dává osobitý ráz, i proto nezapomeňte navštívit místní hospodu. Kamenná Lhota nepatřila do farnosti Josefa Toufara, ať už působil v Zahrádce nebo Číhošti. Nicméně její poloha mezi těmito kostely dává tušit, že i místní Toufara dobře znali a velmi si ho vážili. Jako důkaz budiž petice a dopis na ONV obyvatel Kamenné Lhoty proti přeložení faráře Toufara ze Zahrádky. Dům Zemljanka není s příběhem faráře Toufara spojen vůbec. Je to ale skvělé výchozí místo po jeho stopách. Pozemek slouží jako základna pro stanování, parkování, občerstvení apod.'},
+  {id:'dp', km:2, name:'Dolní Paseka — dům u Rýdlů, č. p. 8', lat:49.6361831, lng:15.2626419,
+   text:'Josef Toufar sem chodíval neděle odpoledne, kdy se scházeli sousedé na besedu a na mariáš. Křtil jim děti a pak se účastnil slavnostního oběda. Toufar nebyl žádný suchar, nezkazil žádnou srandu. Zamlada hrál na kontrabas, rád tancoval, zpíval, s dětmi si začutal fotbal (i když mu to moc nešlo), po křtinách často zdůrazňoval: „Ke křtinám patří soudek piva, je třeba pokřtěné děťátko řádně zapít." Na výčep a hospodskou zábavu byl Josef Toufar zvyklý. Narodil se totiž do hostinské rodiny v Arnolci č. p. 1 jako čtvrté z pěti dětí 14. 7. 1902. Na kněžskou dráhu se vydal až v pozdějším věku po smrti svého otce, který si to nepřál.'},
+  {id:'za', km:4, name:'Zahrádka — kostel sv. Víta', lat:49.6237069, lng:15.2487261,
+   text:'Jako zázrakem se dochoval kostel v bývalé obci Zahrádka, která musela v 70. letech 20. stol. ustoupit vodní nádrži Švihov. Josef Toufar zde působil v letech 1940–1948. Kostel postupně zveleboval stejně jako další majetky farnosti v okolí. Pomáhal, kde mohl, a brzy se stal váženým členem komunity. Do farnosti patřilo rozsáhlé území s dvanácti obcemi, třemi kostely a poutní kaplí a se sedmi školami, ve kterých se každý týden vyučovalo náboženství. Farnost čítala kolem 3000 farníků. Poslední bohoslužbu v Zahrádce měl Josef Toufar 11. 4. 1948. Plný kostel mu zazpíval píseň na rozloučenou. Farář neskrýval slzy dojetí.'},
+  {id:'ks', km:7, name:'Křižná studánka a kaple sv. Víta', lat:49.6168256, lng:15.2811656,
+   text:'Jedním z míst, které Josef Toufar spravoval za svého působení v Zahrádce, je i Křižná studánka. Hlubokými lesy tudy dříve procházel misionář Čáslavského kraje P. Václav Hanzeli. Chodíval upevňovat katolickou víru v těchto tehdy Bohem zapomenutých místech Čech. Často se zastavoval u lesní studánky a omýval si bolavé oči. Po jejich omytí se mu vždy značně ulevilo a později bolest úplně zmizela. Z vděčnosti nad tímto nečekaným uzdravením nechal v roce 1741 zřídit nad studánkou dřevěný kříž.'},
+  {id:'po', km:10, name:'Podivice — památná lípa', lat:49.6046403, lng:15.2801558,
+   text:'Pod tehdy již staletou lípou Josef Toufar často sedával a diskutoval s místním učitelem.'},
+  {id:'ka', km:13, name:'Kaliště — Hostinec U Mahlera', lat:49.5923617, lng:15.3053778,
+   text:'Jak už název vesnice napovídá, nachází se zde hostinec, kde výborně vaří a mají dobré pivo. Kaliště také spadalo do zahrádecké farnosti a Toufar sem chodíval. Při působení v Zahrádce nejezdil na kole ani na motorce. Kolo nebylo do prudkých kopců vhodné, motorku si nemohl dovolit, chodil tudíž pěšky. Zde se mohou cesty poutníků rozdělit — kdo se již cítí unavený a nebo chce změnu, může zvolit cyklotrasu č. 2, tzv. koupací.'},
+  {id:'hp', km:18, name:'Horní Paseka', lat:49.6291, lng:15.2933,
+   text:'Další z krásných míst farnosti Zahrádka. Na návsi se zde nachází kaple Panny Marie, kterou Toufar znovuposvětil v roce 1945. Vyberte si při návštěvě zastávku podle nálady. Když budete mít štěstí, může být otevřená hospoda Na Vršku, a nebo pokračujte rovnou dál do Ledče. (Pozn.: GPS v tištěném almanachu je u této zastávky omylem shodné s Dolní Pasekou — zde je poloha správně.)'},
+  {id:'le', km:29, name:'Ledeč nad Sázavou — budova ONV', lat:49.6980719, lng:15.2729464,
+   text:'Po komunistickém puči v únoru 1948 začali funkcionáři v Ledči nad Sázavou agresivně požadovat Toufarovo přeložení ze Zahrádky do jiné farnosti. Důvod: P. Josef Toufar byl v Zahrádce vyhraněnou osobností a autoritou, která překračovala hranice církve, což ateistickým ideologům a jejich sluhům překáželo. Na podporu Josefa Toufara a tedy proti jeho přeložení jinam tehdy vznikla v Zahrádce a okolí petice, kterou podepsali 3000 farníků, ale také lidé jiného vyznání i občané stojící mimo církev. Pod nepolevujícím politickým tlakem nakonec Josef Toufar rezignuje. A biskupskou konzistoř sám žádá o přeložení do nedaleké farnosti Číhošť, kam se stěhuje 16. 4. 1948.'},
+  {id:'ho', km:33, name:'Hořeslavsko', lat:49.7166733, lng:15.3151697,
+   text:'Je druhá polovina roku 1949 a Josef Toufar již působí v Číhošti. Při návratu pěšky z Ledče do Číhoště na jedné z pochůzek na tomto místě přišla na Josefa Toufara nevolnost. Není se čemu divit po takovém kopci… Nicméně Josef Toufar měl opravdu problémy se srdcem a rozhodl se proto sepsat závěť, což i v září 1949 učinil. Jako by už měl nějakou zlou předtuchu…'},
+  {id:'ci', km:36, name:'Číhošť — kostel Nanebevzetí Panny Marie', lat:49.7407422, lng:15.3358700,
+   text:'V novém číhošťském působišti (farnost Číhošť s přilehlými obcemi čítala kolem 1200 katolíků, patřilo k ní osm vesnic a sedm škol) se ihned pouští Toufar do díla, do duchovní obnovy i oprav. Angažuje se v obecních záležitostech — upravuje okolí kostela, pomáhá starým lidem vymáhat důchody, iniciuje vznik poštovní pobočky, zařizuje v místě zubařskou živnost atd. Obětavost a vysoká aktivita v pastorační činnosti, to jsou erbovní znamení jeho úsilí. Nikdo nemohl tušit, že zde neodpracuje ani celé dva roky. Mezi lety 1948–1949 zesiluje tlak československých komunistických orgánů na podřízení si katolické církve. Do této dramaticky rozbouřené doby přichází zvláštní znamení. 11. 12. 1949 (tehdy III. neděle adventní) se v číhošťském kostele, právě ve chvíli Toufarova kázání, podivuhodně rozkývává dřevěný oltářní křížek, nakonec zůstane stát nakloněn a zkroucen ke kazatelně s mírným převisem. Záhadný úkaz vidělo 19 svědků. Přímo v kostele jsou pak od roku 2015 uloženy ostatky Josefa Toufara.'},
+  {id:'fa', km:36, name:'Číhošť — fara', lat:49.7404794, lng:15.3352550,
+   text:'Zde Josefa Toufara zatklo StB na konci ledna 1950. Nejednalo se o klasické zatčení, ale spíše únos za tmy, na kterém se podílelo 12 příslušníků StB. Ze situačních zpráv StB víme, že se tajná policie pokusila Josefa Toufara dvakrát zatknout v polovině ledna 1950, ale bála se odporu číhošťských farníků, proto přistoupila k únosu.'},
+  {id:'nz', km:40, name:'Nezdín — samota u Hoskovců', lat:49.7187650, lng:15.3202672,
+   text:'Josef Toufar se na Vysočinu ještě jednou vrátil, respektive byl přivezen ve zbědovaném stavu po téměř měsíci věznění a mučení StB. A to proto, aby byl zneužit pro natáčení propagandistického filmu. V noci z 23. na 24. února 1950 je zbědovaný Toufar tajně převezen do číhošťského kostela, kde má hrát hlavní roli ve filmu s biblickým názvem „Běda tomu, skrze něhož pohoršení přichází", v němž měla být československá veřejnost přesvědčena o zločinně provedeném zázraku. Na kazatelnu musel být vynesen a za chvíli se zhroutil. Po cestě zpět potřebovali příslušníci StB umýt znečištěné auto, zastavili na samotě u Hoskovců pro kýbl a vodu. Pan Hoskovec vyšel ven a uviděl na zadním sedadle bezvládné tělo kněze z Číhoště — až později při šetření Toufarova případu v roce 1968 si uvědomil, koho StB vezla zpět do Prahy. Na následky zranění i přes urychlený převoz do pražské nemocnice v Legerově ulici a provedenou operaci Toufar umírá 25. 2. 1950 ve 20:35. Oficiální zpráva úřadů určila jako příčinu úmrtí prasklý žaludeční vřed. (Ve stejné budově zemře 19. ledna 1969 Jan Palach.)'},
+  {id:'ns', km:42, name:'Nezdínská lesní studánka a kaple Panny Marie', lat:49.7141633, lng:15.3401506,
+   text:'V lesním údolí pod Nezdínem se nachází studánka s kaplí. Ve studánce pramení Nezdínský potok. Mnoho lidí sem dochází pro vodu v domnění, že je uzdraví. Rozbory vody ale ukázaly, že je slabě radioaktivní. Nedaleko studánky začíná křížová cesta, tvoří ji 14 křížů na kamenných podstavcích, rozmístěných na okruhu asi 500 metrů dlouhém. Na poutním místě tak vzniklo zajímavé dílo k uctění památky umučených v době nacismu a komunismu. Symbolem toho měli být dle kněze Josefa Pospíšila světelský rodák Karel Hradecký, popravený nacisty v září 1943, a číhošťský páter Josef Toufar, umučený komunisty v únoru 1950.'},
+];
+
+const TIMELINE = [
+  {d:'14. 7. 1902', t:'Narození v Arnolci', key:true, x:'Josef Toufar se narodil do hostinské rodiny jako čtvrté z pěti dětí.'},
+  {d:'1940–1948', t:'Farnost Zahrádka', x:'Váženým členem komunity, farnost s 3000 farníky. Poslední bohoslužba 11. 4. 1948.'},
+  {d:'únor 1948', t:'Komunistický puč', x:'Funkcionáři v Ledči začínají žádat Toufarovo přeložení.'},
+  {d:'16. 4. 1948', t:'Přesun do Číhoště', x:'Pod tlakem rezignuje a sám žádá o nedalekou farnost Číhošť.'},
+  {d:'září 1949', t:'Sepsání závěti', x:'Se srdečními problémy a zlou předtuchou sepisuje závěť.'},
+  {d:'11. 12. 1949', t:'Číhošťský zázrak', key:true, x:'Během kázání se rozkývá oltářní křížek. Vidí to 19 svědků.'},
+  {d:'28. 1. 1950', t:'Únos StB', key:true, x:'Za tmy ho unáší 12 příslušníků Státní bezpečnosti.'},
+  {d:'23.–24. 2. 1950', t:'Poslední svědek u Nezdína', x:'Zbědovaný Toufar převezen ke kostelu k natáčení; cestou zastávka u Hoskovců.'},
+  {d:'25. 2. 1950', t:'Smrt', key:true, x:'Umírá na následky bití a mučení. Oficiální zpráva lživě uvedla prasklý žaludeční vřed.'},
+  {d:'2015', t:'Návrat ostatků', x:'Ostatky Josefa Toufara uloženy v číhošťském kostele.'},
+];
+
+const QUESTS = [
+  {id:'q1', t:'Absolvovat celou trasu dle mapy', note:'cyklo / moto / pěší', p:100, type:'check'},
+  {id:'q2', t:'Vytlačit kolo z Ledče na Hořeslavsko', note:'celý kopec pěšky vedle kola — jako Toufar na pochůzkách; právě zde ho přepadla srdeční slabost', p:50, type:'check'},
+  {id:'q3', t:'2 hodiny v kuse v tichém rozjímání', note:'nemluvit · Vanda za toto 300 bodů', p:40, type:'check'},
+  {id:'q5', t:'Napít se léčivé vody u Křižné studánky', note:'a ošetřit bolavá místa', p:15, type:'check'},
+  {id:'q6', t:'Dojet na geografický střed ČR', p:15, type:'check'},
+  {id:'q7', t:'Vykoupat se v peřejích Sázavy', p:20, type:'check'},
+  {id:'q4', t:'Uctít památku J. Toufara u nápoje', note:'komorně, po svém · 1 bod za nápoj', p:1, type:'count', unit:'nápojů', max:99},
+  {id:'q8', t:'Podpisy svědků tvého počínání', note:'19 podpisů = 50 b. · 20. podpis hostinského ve Lhotě = +300 b.', type:'count', unit:'podpisů', max:20, scoring:'signatures'},
+];
+function questPoints(q,val){
+  if(q.type==='check') return val?q.p:0;
+  if(q.scoring==='signatures') return (val>=19?50:0)+(val>=20?300:0);
+  return (val||0)*q.p;
+}
+
+/* ⬇️⬇️⬇️ MINULÉ VÝPRAVY — texty a fotky podle let ⬇️⬇️⬇️
+   Ke každému roku doplň text ohlédnutí a odkazy na fotky (URL do 'src').
+   Fotky nahraj vedle appky na GitHub (pak stačí např. 'fotky/2024-start.jpg')
+   nebo kamkoli s veřejným odkazem. Prázdný 'src' zobrazí zástupný rámeček.
+   Text z almanachu (20 cyklistů, 4 pěší, 1 kůň…) je zařazen pod rok 2023 —
+   pokud patří jinam, přesuň ho. */
+const YEARS = [
+  {y:2025, text:'Sem doplň ohlédnutí za ročníkem 2025…',
+   photos:[{src:'',cap:'2025 — doplň fotku'},{src:'',cap:'2025 — doplň fotku'}]},
+  {y:2024, text:'Sem doplň ohlédnutí za ročníkem 2024…',
+   photos:[{src:'',cap:'2024 — doplň fotku'},{src:'',cap:'2024 — doplň fotku'}]},
+  {y:2023, text:'Počasí přálo a účast byla hojná. Na trasu postupně vyrazilo 20 cyklistů, 4 pěší a 1 kůň. Po cestě jsme u Křižné studánky narazili na dalšího chodce, který se o putování dozvěděl pravděpodobně v hospodě ve Lhotě a očekával davy účastníků. Páteční kultura byla silná, přinesla nečekané přátelství, kdy Votok obdivoval um hostinského čepovat pivo a seřezávat pěnu nožem. Večerní výkon se bohužel podepsal na sobotním a trasu dokončilo pouze 8 cyklistů, 0 pěších a 0 koňů. 8 cyklistů se tedy zařadilo mezi prvních 10 lidí, kteří kdy trasu dokončili. Nejkomplikovanější dopravu na místo srazu pak měla Vanda, která se z cesty vracela domů a pak to vzala ještě přes jinou Kamennou Lhotu. Naopak přesná navigace pomohla rodině Suchých na rychlé cestě Itálie–Kamenná Lhota. Doprovodnou soutěž vyhrál Vítek s rekordním počtem 196 bodů.',
+   photos:[{src:'',cap:'Start u Zemljanky'},{src:'',cap:'Křižná studánka'},{src:'',cap:'Páteční posezení u ohně'},{src:'',cap:'Cíl — 8 cyklistů'}]},
+  {y:2022, text:'Sem doplň ohlédnutí za ročníkem 2022…',
+   photos:[{src:'',cap:'2022 — doplň fotku'},{src:'',cap:'2022 — doplň fotku'}]},
+];
+/* ⬆️⬆️⬆️ konec sekce minulých výprav ⬆️⬆️⬆️ */
+
+/* ================================================================
+   FIREBASE — živé sdílení polohy mezi telefony (VOLITELNÉ)
+   ----------------------------------------------------------------
+   Bez klíče appka funguje kompletně; jen se poloha nesdílí mezi
+   různými telefony. Chceš-li vzájemné tečky poutníků:
+   1) Založ zdarma projekt na https://console.firebase.google.com
+   2) Vytvoř "Realtime Database"
+   3) Vlož sem konfiguraci a přepni ENABLE_LIVE na true:
+   ================================================================ */
+const ENABLE_LIVE = false;               // ⬅️ přepni na true po vyplnění klíče
+const FIREBASE_CONFIG = {
+  apiKey: "",
+  databaseURL: "",                        // např. https://tvuj-projekt.firebaseio.com
+  projectId: ""
+};
+/* ================================================================ */
+
+/* ---------- ukládání do telefonu ---------- */
+const store = {
+  get:(k,d)=>{try{const v=localStorage.getItem('toufar_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+  set:(k,v)=>{try{localStorage.setItem('toufar_'+k,JSON.stringify(v))}catch(e){}}
+};
+
+/* =============== MAPA =============== */
+let map, meMarker, peerMarkers={}, stopMarkers={};
+function initMap(){
+  map = L.map('map',{zoomControl:true,attributionControl:true}).setView([49.68,15.30],11.5);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+    maxZoom:19, subdomains:'abcd', attribution:'© OpenStreetMap © CARTO'
+  }).addTo(map);
+
+  // oficiální stopa trasy z almanachu (GPX zapečené v appce, funguje offline)
+  L.polyline(ROAD_A,{color:'#8a3324',weight:4,opacity:.7,lineCap:'round'}).addTo(map);
+  L.polyline(ROAD_B,{color:'#9c7a3c',weight:3.5,opacity:.7,dashArray:'6,6',lineCap:'round'}).addTo(map).bindPopup(RETURN_POPUP);
+  L.polyline(POKORA,{color:'#c9a85c',weight:9,opacity:.55,lineCap:'round'}).addTo(map).bindPopup(POKORA_POPUP);
+  buildRoadCum();
+
+
+  STOPS.forEach((s,i)=>{
+    const html = `<div class="mk stop"><span>${i+1}</span></div>`;
+    const icon = L.divIcon({html, className:'', iconSize:[30,30], iconAnchor:[15,28], popupAnchor:[0,-26]});
+    const m = L.marker([s.lat,s.lng],{icon}).addTo(map);
+    m.bindPopup(popupHtml(s,i+1));
+    stopMarkers[s.id]=m;
+  });
+  initToufarPace();
+  initPois();
+  fitRoute();
+}
+
+/* ---------- Oficiální stopa trasy (z GPX almanachu, okruh 54 km) ----------
+   ROAD_A: poutní větev Lhota → Nezdínská studánka (42 km)
+   ROAD_B: návrat studánka → Pavlov → Vilémovice → Sluneční zátoka → Lhota
+   POKORA: úsek Ledeč (29. km) → Hořeslavsko (33. km) — soutěžní tlačení kola */
+const RETURN_POPUP='<b>Cesta zpět do Lhoty</b><br><span style="font-size:13px">Návratová větev okruhu: přes Pavlov (44. km), Vilémovice (46. km) a Sluneční zátoku (48. km) podél Sázavy zpět do Kamenné Lhoty (54 km celkem). Oficiální stopa z almanachu.</span>';
+const POKORA_POPUP='<b>⛰ Úsek pokory</b><br><span style="font-size:13px">Soutěžní výzva (+50 b.): vytlač kolo z Ledče (29. km) až na Hořeslavsko (33. km) — celý kopec pěšky vedle kola, jako chodíval Toufar. Právě v těchto místech ho přepadla srdeční slabost.</span>';
+const ROAD_A=[[49.64342,15.27728],[49.64340,15.27673],[49.64310,15.27739],[49.64304,15.27593],[49.64270,15.27605],[49.64201,15.27555],[49.64108,15.27532],[49.63987,15.27386],[49.63806,15.27237],[49.63788,15.27205],[49.63772,15.27054],[49.63780,15.27070],[49.63779,15.27011],[49.63886,15.26680],[49.63885,15.26627],[49.63863,15.26560],[49.63875,15.26481],[49.63998,15.26373],[49.64006,15.26340],[49.63998,15.26310],[49.63863,15.26195],[49.63745,15.26152],[49.63713,15.26174],[49.63678,15.26256],[49.63642,15.26266],[49.63632,15.26253],[49.63579,15.26255],[49.63401,15.26128],[49.63394,15.26110],[49.63404,15.26038],[49.62787,15.25829],[49.62661,15.25765],[49.62407,15.25585],[49.62342,15.25552],[49.62349,15.24918],[49.62389,15.24902],[49.62396,15.24875],[49.62389,15.24902],[49.62349,15.24918],[49.62339,15.25656],[49.62304,15.25860],[49.62208,15.26132],[49.62059,15.26402],[49.61892,15.26816],[49.61852,15.27075],[49.61828,15.27092],[49.61780,15.27037],[49.61743,15.27030],[49.61753,15.27130],[49.61747,15.27185],[49.61676,15.27409],[49.61681,15.27493],[49.61717,15.27656],[49.61682,15.27767],[49.61674,15.27831],[49.61694,15.27970],[49.61692,15.28092],[49.61706,15.28139],[49.61718,15.28095],[49.61706,15.28139],[49.61696,15.28112],[49.61544,15.28083],[49.61492,15.28104],[49.61424,15.28093],[49.61370,15.28123],[49.61334,15.28113],[49.61337,15.28181],[49.61305,15.28232],[49.61267,15.28262],[49.61228,15.28330],[49.61184,15.28491],[49.61136,15.28607],[49.61079,15.28669],[49.61076,15.28704],[49.61099,15.28771],[49.61093,15.28825],[49.60973,15.28970],[49.60937,15.29036],[49.60823,15.28948],[49.60751,15.28829],[49.60728,15.28699],[49.60745,15.28499],[49.60644,15.28295],[49.60532,15.28220],[49.60490,15.28208],[49.60455,15.28218],[49.60427,15.28197],[49.60430,15.28121],[49.60458,15.28017],[49.60447,15.27796],[49.60410,15.27753],[49.60384,15.27768],[49.60349,15.27821],[49.60281,15.27985],[49.60233,15.27990],[49.60199,15.28013],[49.59999,15.28198],[49.59980,15.28228],[49.59975,15.28259],[49.59985,15.28303],[49.60069,15.28527],[49.59998,15.28561],[49.59935,15.28618],[49.59884,15.28608],[49.59828,15.28658],[49.59817,15.28759],[49.59772,15.28867],[49.59764,15.29030],[49.59732,15.29053],[49.59667,15.29071],[49.59604,15.29057],[49.59575,15.29064],[49.59510,15.29019],[49.59486,15.29019],[49.59461,15.29298],[49.59370,15.29516],[49.59345,15.29614],[49.59338,15.29783],[49.59288,15.29967],[49.59268,15.30355],[49.59229,15.30526],[49.59244,15.30513],[49.59315,15.30504],[49.59353,15.30461],[49.59468,15.30387],[49.59598,15.30260],[49.59766,15.30219],[49.59866,15.30056],[49.59978,15.29921],[49.60214,15.29728],[49.60409,15.29651],[49.60459,15.29613],[49.60688,15.29379],[49.60773,15.29234],[49.60875,15.29130],[49.60973,15.28970],[49.61090,15.28830],[49.61099,15.28771],[49.61077,15.28678],[49.61136,15.28607],[49.61181,15.28611],[49.61230,15.28550],[49.61266,15.28552],[49.61360,15.28526],[49.61446,15.28517],[49.61494,15.28488],[49.61557,15.28426],[49.61639,15.28418],[49.61713,15.28440],[49.61829,15.28519],[49.62038,15.28512],[49.62169,15.28543],[49.62342,15.28522],[49.62399,15.28783],[49.62463,15.28783],[49.62517,15.28820],[49.62548,15.28902],[49.62624,15.28990],[49.62665,15.29064],[49.62669,15.29110],[49.62655,15.29187],[49.62675,15.29317],[49.62702,15.29350],[49.62707,15.29413],[49.62773,15.29379],[49.62848,15.29315],[49.62889,15.29304],[49.62931,15.29308],[49.63016,15.29277],[49.63141,15.29202],[49.63190,15.29158],[49.63222,15.29218],[49.63267,15.29259],[49.63222,15.29218],[49.63190,15.29158],[49.63236,15.29140],[49.63314,15.29174],[49.63330,15.29158],[49.63362,15.29162],[49.63443,15.29188],[49.63508,15.29195],[49.63574,15.29231],[49.63676,15.29243],[49.63795,15.29309],[49.63876,15.29313],[49.64001,15.29399],[49.64094,15.29380],[49.64145,15.29409],[49.64184,15.29413],[49.64211,15.29438],[49.64201,15.29481],[49.64212,15.29519],[49.64262,15.29572],[49.64272,15.29598],[49.64266,15.29631],[49.64228,15.29655],[49.64212,15.29681],[49.64218,15.29753],[49.64296,15.29694],[49.64341,15.29693],[49.64457,15.29622],[49.64497,15.29655],[49.64580,15.29552],[49.64732,15.29435],[49.64789,15.29363],[49.64835,15.29324],[49.64968,15.29518],[49.65098,15.29505],[49.65240,15.29541],[49.65333,15.29587],[49.65461,15.29623],[49.65570,15.29704],[49.65691,15.29871],[49.65726,15.29991],[49.65790,15.30102],[49.65819,15.30118],[49.65962,15.30123],[49.65992,15.30223],[49.65991,15.30284],[49.66040,15.30307],[49.66055,15.30442],[49.66071,15.30490],[49.66227,15.30557],[49.66280,15.30616],[49.66307,15.30690],[49.66321,15.30872],[49.66351,15.30984],[49.66385,15.31072],[49.66421,15.31116],[49.66456,15.31218],[49.66481,15.31470],[49.66495,15.31481],[49.66533,15.31402],[49.66567,15.31442],[49.66597,15.31526],[49.66809,15.31521],[49.66897,15.31474],[49.66969,15.31394],[49.67000,15.31381],[49.67055,15.31405],[49.67087,15.31486],[49.67119,15.31503],[49.67200,15.31399],[49.67213,15.31416],[49.67265,15.31332],[49.67337,15.31259],[49.67378,15.31200],[49.67425,15.31178],[49.67447,15.31185],[49.67473,15.31159],[49.67508,15.31097],[49.67540,15.30942],[49.67583,15.30865],[49.67634,15.30809],[49.67741,15.30598],[49.67857,15.30456],[49.67926,15.30401],[49.67956,15.30354],[49.68050,15.30113],[49.68075,15.30005],[49.68072,15.29859],[49.68053,15.29763],[49.68091,15.29598],[49.68096,15.29523],[49.68169,15.29424],[49.68221,15.29184],[49.68324,15.28918],[49.68383,15.28861],[49.68497,15.28838],[49.68812,15.28616],[49.69039,15.28488],[49.69284,15.28314],[49.69369,15.28120],[49.69475,15.28042],[49.69482,15.28027],[49.69500,15.27966],[49.69490,15.27779],[49.69653,15.27694],[49.69666,15.27669],[49.69656,15.27599],[49.69752,15.27627],[49.69759,15.27387],[49.69781,15.27269],[49.69817,15.27231],[49.69834,15.27296],[49.69850,15.27314],[49.69974,15.27372],[49.69997,15.27769],[49.70068,15.27828],[49.70076,15.27927],[49.70133,15.27927],[49.70189,15.27949],[49.70183,15.27981],[49.70193,15.28023],[49.70246,15.28060],[49.70268,15.28094],[49.70272,15.28123],[49.70302,15.28125],[49.70323,15.28169],[49.70430,15.28228],[49.70628,15.28502],[49.70658,15.28612],[49.70731,15.28647],[49.70797,15.28783],[49.70832,15.28924],[49.70843,15.29100],[49.70862,15.29134],[49.70795,15.29351],[49.70706,15.29522],[49.70814,15.29692],[49.71210,15.30573],[49.71277,15.30690],[49.71468,15.30971],[49.71545,15.31303],[49.71641,15.31478],[49.71801,15.31678],[49.71993,15.31883],[49.72060,15.31994],[49.72143,15.32056],[49.72241,15.32105],[49.72311,15.32168],[49.72412,15.32237],[49.72445,15.32272],[49.72472,15.32335],[49.72509,15.32343],[49.72545,15.32368],[49.72766,15.32612],[49.72890,15.32692],[49.72986,15.32776],[49.73059,15.32858],[49.73137,15.32872],[49.73247,15.32937],[49.73292,15.32950],[49.73340,15.32990],[49.73412,15.32968],[49.73715,15.33139],[49.73866,15.33334],[49.73994,15.33467],[49.74037,15.33480],[49.74116,15.33608],[49.74108,15.33599],[49.74098,15.33606],[49.73968,15.33723],[49.73683,15.34136],[49.73615,15.34219],[49.73359,15.34428],[49.73272,15.34473],[49.73212,15.34486],[49.73057,15.34455],[49.72901,15.34480],[49.72761,15.34055],[49.72569,15.33717],[49.72363,15.33263],[49.72319,15.33211],[49.72042,15.32985],[49.71997,15.32918],[49.71893,15.32651],[49.71890,15.32119],[49.71891,15.32635],[49.71919,15.32719],[49.71895,15.32735],[49.71882,15.32763],[49.71864,15.33011],[49.71866,15.33122],[49.71893,15.33339],[49.71884,15.33504],[49.71754,15.33516],[49.71709,15.33496],[49.71597,15.33473],[49.71566,15.33481],[49.71392,15.33810],[49.71384,15.33857],[49.71391,15.33906],[49.71423,15.33989],[49.71443,15.34005],[49.71423,15.33989],[49.71415,15.34018]];
+const ROAD_B=[[49.71415,15.34018],[49.71400,15.34039],[49.71362,15.34040],[49.71337,15.34069],[49.71273,15.34031],[49.71229,15.34033],[49.71100,15.34116],[49.71030,15.34125],[49.70933,15.34072],[49.70880,15.34013],[49.70756,15.33940],[49.70567,15.33802],[49.70392,15.33781],[49.70325,15.33804],[49.70395,15.33720],[49.70365,15.33588],[49.70235,15.33426],[49.70136,15.33234],[49.70119,15.33257],[49.70085,15.33272],[49.70005,15.33250],[49.69921,15.33270],[49.69965,15.33013],[49.69953,15.33085],[49.69934,15.33017],[49.69903,15.32962],[49.69816,15.32938],[49.69729,15.32889],[49.69544,15.32828],[49.69494,15.32965],[49.69393,15.33007],[49.69315,15.33024],[49.69278,15.33056],[49.69253,15.32999],[49.69217,15.32984],[49.69196,15.32962],[49.69000,15.32673],[49.68979,15.32679],[49.68940,15.32743],[49.68891,15.32769],[49.68878,15.32764],[49.68765,15.32536],[49.68710,15.32438],[49.68662,15.32377],[49.68645,15.32330],[49.68695,15.32073],[49.68671,15.32004],[49.68664,15.31774],[49.68605,15.31525],[49.68518,15.31325],[49.68481,15.31108],[49.68438,15.31110],[49.68414,15.31091],[49.68437,15.30986],[49.68481,15.30938],[49.68523,15.30816],[49.68614,15.30887],[49.68721,15.31049],[49.68762,15.31069],[49.68766,15.31062],[49.68735,15.30991],[49.68688,15.30944],[49.68644,15.30842],[49.68592,15.30638],[49.68559,15.30559],[49.68379,15.30312],[49.68301,15.30173],[49.68265,15.30149],[49.68037,15.30163],[49.67895,15.30002],[49.67533,15.29779],[49.67493,15.29738],[49.67285,15.29180],[49.67293,15.29161],[49.67275,15.29070],[49.67265,15.28904],[49.67268,15.28620],[49.67006,15.28660],[49.66753,15.28679],[49.66728,15.28662],[49.66538,15.28437],[49.66431,15.28364],[49.66343,15.28337],[49.65955,15.28082],[49.65716,15.27867],[49.65598,15.27810],[49.65406,15.27767],[49.65395,15.27750],[49.65416,15.27587],[49.65399,15.27485],[49.65374,15.27438],[49.65300,15.27372],[49.65255,15.27254],[49.65205,15.27163],[49.65066,15.27215],[49.64970,15.27219],[49.64827,15.27388],[49.64735,15.27464],[49.64678,15.27480],[49.64646,15.27416],[49.64576,15.27494],[49.64515,15.27520],[49.64431,15.27531],[49.64442,15.27569],[49.64426,15.27600],[49.64400,15.27617]];
+const POKORA=[[49.69834,15.27296],[49.69850,15.27314],[49.69974,15.27372],[49.69997,15.27769],[49.70068,15.27828],[49.70076,15.27927],[49.70133,15.27927],[49.70189,15.27949],[49.70183,15.27981],[49.70193,15.28023],[49.70246,15.28060],[49.70268,15.28094],[49.70272,15.28123],[49.70302,15.28125],[49.70323,15.28169],[49.70430,15.28228],[49.70628,15.28502],[49.70658,15.28612],[49.70731,15.28647],[49.70797,15.28783],[49.70832,15.28924],[49.70843,15.29100],[49.70862,15.29134],[49.70795,15.29351],[49.70706,15.29522],[49.70814,15.29692],[49.71210,15.30573],[49.71277,15.30690],[49.71468,15.30971],[49.71545,15.31303],[49.71641,15.31478],[49.71669,15.31510]];
+let roadAll=null, roadCum=null, roadTotal=0;
+function havKm(a,b){
+  const R=6371,d=Math.PI/180;
+  const x=(b[0]-a[0])*d, y=(b[1]-a[1])*d;
+  const h=Math.sin(x/2)**2+Math.cos(a[0]*d)*Math.cos(b[0]*d)*Math.sin(y/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function buildRoadCum(){
+  roadAll=ROAD_A.concat(ROAD_B);
+  roadCum=[0];
+  for(let i=1;i<roadAll.length;i++) roadCum.push(roadCum[i-1]+havKm(roadAll[i-1],roadAll[i]));
+  roadTotal=roadCum[roadCum.length-1];
+}
+function toufarLatLng(){
+  if(!roadCum) buildRoadCum();
+  const km=paceKmNow();
+  const target=Math.min(roadTotal, km/PACE.endKm*roadTotal);
+  let i=1; while(i<roadCum.length&&roadCum[i]<target) i++;
+  if(i>=roadAll.length) return roadAll[roadAll.length-1];
+  const f=(target-roadCum[i-1])/((roadCum[i]-roadCum[i-1])||1);
+  return [roadAll[i-1][0]+(roadAll[i][0]-roadAll[i-1][0])*f, roadAll[i-1][1]+(roadAll[i][1]-roadAll[i-1][1])*f];
+}
+
+/* ---------- Zajímavá místa a občerstvení na mapě ---------- */
+const POIS = [
+  {e:'🍽️', name:'Pavlov (44. km)', note:'Občerstvení na návratové větvi.', lat:49.6990, lng:15.3328},
+  {e:'🍽️', name:'Vilémovice (46. km)', note:'Občerstvení na návratové větvi.', lat:49.6864, lng:15.3218},
+  {e:'🌊', name:'Stvořidla (odbočka z 24. km)', note:'Peřeje Sázavy ~1 km od trasy — dá se koupat (soutěž: +20 b.!). Pozor, náročný úsek.', lat:49.6668, lng:15.3328},
+  {e:'🏨', name:'Kouty — hotel Luna (odbočka z 19. km)', note:'Jídlo, pivo, sauna na vodě; 400 m od trasy.', lat:49.6383, lng:15.2993},
+  {e:'⛺', name:'Sluneční zátoka (48. km)', note:'Legendární tábořiště Jaroslava Foglara a Hochů od Bobří řeky s pomníkem spisovatele. Trasa vede přímo kolem, po břehu Sázavy.', lat:49.68789, lng:15.31107},
+  {e:'🍺', name:'Hospoda na cyklostezce u Lipničky', note:'Přibližná poloha dle almanachu.', lat:49.6567, lng:15.3884},
+  {e:'🍺', name:'Hospoda mezi Koňkovicemi a Bilantovou Lhotou', note:'Přibližná poloha dle almanachu.', lat:49.6547, lng:15.3324},
+  {e:'🏰', name:'Lipnice nad Sázavou — hrad', note:'Nádherný výhled z hradeb. Dole hospoda U České koruny, kam chodíval Jaroslav Hašek.', lat:49.6140, lng:15.4130},
+  {e:'👂', name:'Národní památník odposlechu', note:'Bretschneidrovo ucho, Ústa pravdy a Zlaté oči vytesané v žulových lomech na paměť špiclování za bývalých režimů. V lomech se dá koupat.', lat:49.6183, lng:15.4068},
+];
+let poiLayer=null;
+function initPois(){
+  poiLayer=L.layerGroup();
+  POIS.forEach(p=>{
+    const html=`<div class="mk-poi">${p.e}</div>`;
+    const icon=L.divIcon({html,className:'',iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-14]});
+    L.marker([p.lat,p.lng],{icon}).bindPopup(
+      `<b>${p.e} ${p.name}</b><br><span style="font-size:13px">${p.note}</span>
+       <div class="popup-actions"><a class="nav" href="https://mapy.com/fnc/v1/route?end=${p.lng},${p.lat}&routeType=bike_road&navigate=true" target="_blank" rel="noopener">Navigovat</a></div>`
+    ).addTo(poiLayer);
+  });
+  poiLayer.addTo(map);
+}
+function togglePois(btn){
+  if(map.hasLayer(poiLayer)){map.removeLayer(poiLayer);btn.classList.remove('poi-on');}
+  else{poiLayer.addTo(map);btn.classList.add('poi-on');}
+}
+
+/* ---------- „Tempo Toufara" — kde bys teď zhruba měl být ---------- */
+/* Kniha: v Číhošti buď nejpozději v 16:00. Model dle skutečné stopy: start 9:00,
+   16:00 kostel v Číhošti (36. km), návrat okruhem zpět do Lhoty (54 km) do 19:00. */
+const PACE = {startH:9, churchH:16, churchKm:36, endH:19, endKm:54};
+let toufarMarker=null;
+function paceKmNow(){
+  const n=new Date(); const h=n.getHours()+n.getMinutes()/60;
+  if(h<=PACE.startH) return 0;
+  if(h>=PACE.endH) return PACE.endKm;
+  if(h<=PACE.churchH) return (h-PACE.startH)/(PACE.churchH-PACE.startH)*PACE.churchKm;
+  return PACE.churchKm + (h-PACE.churchH)/(PACE.endH-PACE.churchH)*(PACE.endKm-PACE.churchKm);
+}
+function initToufarPace(){
+  const html=`<div class="mk-toufar"><div class="face">✝</div><div class="tag">P. Toufar</div></div>`;
+  const icon=L.divIcon({html,className:'',iconSize:[34,50],iconAnchor:[17,17]});
+  toufarMarker=L.marker(toufarLatLng(),{icon,zIndexOffset:900}).addTo(map);
+  updateToufarPopup();
+  setInterval(()=>{ toufarMarker.setLatLng(toufarLatLng()); updateToufarPopup(); },60000);
+}
+function updateToufarPopup(){
+  const km=paceKmNow();
+  const t=new Date().toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'});
+  toufarMarker.bindPopup(`<b>Tempo faráře Toufara</b><br>
+    <span style="font-size:13px">V ${t} bys měl být zhruba na <b>${km.toFixed(1)}. km</b> okruhu, ať jsi v Číhošti nejpozději v 16:00 — jinak se cesta pro tebe může stát očistnou. (Model: start 9:00 ve Lhotě, návrat ~19:00.)</span>`);
+}
+function popupHtml(s,n){
+  return `<div><span class="popup-km">Zastávka ${n} · ${s.km}. km</span><br><b>${s.name}</b>
+    <div class="popup-actions">
+      <a class="nav" href="https://mapy.com/fnc/v1/route?end=${s.lng},${s.lat}&routeType=bike_road&navigate=true" target="_blank" rel="noopener">Navigovat</a>
+      <button onclick="focusStopText('${s.id}')">Text</button>
+      <button onclick="toggleDone('${s.id}')">Byl(a)</button>
+    </div></div>`;
+}
+function fitRoute(){
+  const b = L.latLngBounds(ROAD_A.concat(ROAD_B));
+  map.fitBounds(b,{padding:[50,50]});
+}
+function focusStop(id){
+  showView('map');
+  const s = STOPS.find(x=>x.id===id);
+  setTimeout(()=>{ map.setView([s.lat,s.lng],15); stopMarkers[id].openPopup(); map.invalidateSize(); },80);
+}
+function focusStopText(id){
+  showView('stops');
+  setTimeout(()=>{
+    const c=document.getElementById('card-'+id);
+    if(!c)return;
+    c.scrollIntoView({behavior:'smooth',block:'center'});
+    c.classList.add('flash');
+    setTimeout(()=>c.classList.remove('flash'),1600);
+  },100);
+}
+
+/* ---------- moje poloha ---------- */
+let watchId=null;
+function geoBlockedReason(){
+  if(location.protocol==='file:')
+    return 'Appka je otevřená jako soubor v telefonu/počítači (file://) — Chrome a Edge v tomto režimu GPS blokují.\n\nŘešení: appku je potřeba otevřít z internetové adresy (https). Stačí ji zdarma nahrát např. na GitHub Pages nebo Netlify a poslat účastníkům odkaz.';
+  if(!window.isSecureContext)
+    return 'Stránka neběží přes zabezpečené https — prohlížeč proto GPS blokuje. Nahraj appku na hosting s https.';
+  return null;
+}
+function geoErrMsg(e){
+  if(e && e.code===1) return 'Přístup k poloze byl odepřen. Povol polohu pro tento web v nastavení prohlížeče (ikona zámku vedle adresy → Poloha → Povolit).';
+  if(e && e.code===2) return 'Polohu se nepodařilo určit — zkontroluj, že máš v telefonu zapnutou polohu (GPS).';
+  if(e && e.code===3) return 'Zjišťování polohy vypršelo. Zkus to znovu, ideálně venku.';
+  return 'Polohu se nepodařilo zjistit.';
+}
+function locateMe(){
+  const blocked=geoBlockedReason();
+  if(blocked){alert(blocked);return;}
+  if(!navigator.geolocation){alert('Tvůj prohlížeč neumí GPS.');return;}
+  navigator.geolocation.getCurrentPosition(p=>{
+    const {latitude:la,longitude:ln}=p.coords;
+    setMe(la,ln); map.setView([la,ln],14);
+  }, e=>alert(geoErrMsg(e)),
+  {enableHighAccuracy:true,timeout:10000,maximumAge:15000});
+}
+function setMe(la,ln){
+  if(!meMarker){
+    meMarker = L.marker([la,ln],{icon:L.divIcon({html:'<div class="mk-me"></div>',className:'',iconSize:[20,20],iconAnchor:[10,10]}),zIndexOffset:1000}).addTo(map);
+  } else meMarker.setLatLng([la,ln]);
+}
+
+/* =============== ŽIVÉ SDÍLENÍ =============== */
+const PILGRIM_ICONS = ['🚲','🥾','🏍️','🐴','⛺','🎒','☂️','🌻'];
+let live={on:false,nick:'',group:'',icon:'🚲',db:null,ref:null,uid:null,watch:null,peers:{}};
+
+function buildIconPick(){
+  const sel = store.get('picon','🚲');
+  live.icon = sel;
+  document.getElementById('iconPick').innerHTML = PILGRIM_ICONS.map(e=>
+    `<button class="${e===sel?'sel':''}" data-emo="${e}">${e}</button>`).join('');
+  document.querySelectorAll('#iconPick button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('#iconPick button').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel'); live.icon=b.dataset.emo; store.set('picon',live.icon);
+  }));
+}
+function openLiveModal(){
+  document.getElementById('nickInput').value = store.get('nick','');
+  buildIconPick();
+  document.getElementById('liveModal').classList.add('open');
+}
+function startLive(){
+  const blocked=geoBlockedReason();
+  if(blocked){alert(blocked);return;}
+  const nick=document.getElementById('nickInput').value.trim()||'Poutník';
+  const group=document.getElementById('groupInput').value.trim()||'toufar2026';
+  store.set('nick',nick);
+  live.nick=nick; live.group=group;
+  document.getElementById('liveModal').classList.remove('open');
+  document.getElementById('peersPanel').classList.add('show');
+
+  if(!(ENABLE_LIVE && FIREBASE_CONFIG.databaseURL)){
+    // Ukázkový režim bez serveru — jen tento telefon; ukáže vlastní tečku + řádek v seznamu
+    live.on=true; updateLiveBtn();
+    live.watch = navigator.geolocation.watchPosition(p=>{
+      setMe(p.coords.latitude,p.coords.longitude);
+      live.peers={demo:{n:live.nick+' (ty)',i:live.icon,la:p.coords.latitude,ln:p.coords.longitude}};
+      renderPeers();
+    },()=>{renderPeers();},{enableHighAccuracy:true});
+    renderPeers();
+    alert('Sdílení běží v ukázkovém režimu (jen tento telefon).\n\nPro vzájemné sledování všech poutníků doplň v kódu Firebase klíč — je to označené v souboru.');
+    return;
+  }
+  connectFirebase();
+}
+function connectFirebase(){
+  const load=(src)=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+  Promise.all([
+    load('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js'),
+    load('https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js')
+  ]).then(()=>{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    live.db = firebase.database();
+    live.uid = store.get('uid', null) || ('u'+Math.random().toString(36).slice(2,9));
+    store.set('uid',live.uid);
+    const base = live.db.ref('groups/'+live.group+'/'+live.uid);
+    base.onDisconnect().remove();
+    live.on=true; updateLiveBtn();
+
+    live.watch = navigator.geolocation.watchPosition(p=>{
+      setMe(p.coords.latitude,p.coords.longitude);
+      base.set({n:live.nick, i:live.icon, la:p.coords.latitude, ln:p.coords.longitude, t:Date.now()});
+    },()=>{},{enableHighAccuracy:true,maximumAge:5000});
+
+    live.db.ref('groups/'+live.group).on('value',snap=>{
+      const data=snap.val()||{};
+      // odeber tečky, které zmizely
+      Object.keys(peerMarkers).forEach(id=>{if(!data[id]||id===live.uid){map.removeLayer(peerMarkers[id]);delete peerMarkers[id];}});
+      live.peers={};
+      Object.entries(data).forEach(([id,v])=>{
+        if(id===live.uid||!v.la)return;
+        live.peers[id]=v;
+        const emo=v.i||'📍';
+        const html=`<div class="mk-peer"><div class="emo">${emo}</div><div class="lbl">${(v.n||'?').replace(/[<>]/g,'')}</div></div>`;
+        if(peerMarkers[id]) { peerMarkers[id].setLatLng([v.la,v.ln]); peerMarkers[id].setIcon(L.divIcon({html,className:'',iconSize:[26,44],iconAnchor:[13,13]})); }
+        else peerMarkers[id]=L.marker([v.la,v.ln],{icon:L.divIcon({html,className:'',iconSize:[26,44],iconAnchor:[13,13]})}).addTo(map);
+      });
+      renderPeers();
+    });
+  }).catch(()=>alert('Nepodařilo se připojit k serveru sdílení.'));
+}
+function nearestStop(la,ln){
+  let best=null,bd=1e9;
+  STOPS.forEach(s=>{const d=(s.lat-la)**2+(s.lng-ln)**2; if(d<bd){bd=d;best=s;}});
+  return best;
+}
+function renderPeers(){
+  const ids=Object.keys(live.peers);
+  document.getElementById('peersCount').textContent=ids.length;
+  const list=document.getElementById('peersList');
+  if(!ids.length){ list.innerHTML='<div class="empty">Zatím nikdo další nesdílí polohu.</div>'; return; }
+  list.innerHTML=ids.map(id=>{
+    const v=live.peers[id]; const ns=nearestStop(v.la,v.ln);
+    return `<div class="p" onclick="flyToPeer(${v.la},${v.ln})">
+      <span class="e">${v.i||'📍'}</span><span>${(v.n||'?').replace(/[<>]/g,'')}</span>
+      <span class="near">u „${ns.name.split('—')[0].trim()}"</span></div>`;
+  }).join('');
+}
+function flyToPeer(la,ln){ map.setView([la,ln],15); map.invalidateSize(); }
+function stopLive(){
+  live.on=false; updateLiveBtn();
+  document.getElementById('peersPanel').classList.remove('show');
+  if(live.watch!=null) navigator.geolocation.clearWatch(live.watch);
+  if(live.db&&live.uid){ live.db.ref('groups/'+live.group+'/'+live.uid).remove(); live.db.ref('groups/'+live.group).off(); }
+  Object.values(peerMarkers).forEach(m=>map.removeLayer(m)); peerMarkers={}; live.peers={};
+}
+function updateLiveBtn(){
+  const b=document.getElementById('btnLive');
+  b.classList.toggle('live-on',live.on);
+  b.innerHTML = live.on ? '📡 Sdílím — vypnout' : '📡 Sdílet polohu';
+}
+
+/* =============== ZASTÁVKY =============== */
+/* ⬇️ ZVUKOVÉ NAHRÁVKY (volitelné): až namluvíte průvodce, vložte sem odkazy na mp3.
+   Karta pak nabídne přehrání nahrávky místo strojového předčítání. */
+const AUDIO = { kl:'', dp:'', za:'', ks:'', po:'', ka:'', hp:'', le:'', ho:'', ci:'', fa:'', nz:'', ns:'' };
+/* ⬆️ konec sekce zvuků */
+
+function renderStops(){
+  const done = store.get('done',{});
+  const el=document.getElementById('stopsList');
+  el.innerHTML = STOPS.map((s,i)=>{
+    const short = s.text.length>170;
+    const head = s.text.slice(0, short? s.text.slice(0,170).lastIndexOf(' ') :s.text.length);
+    const rest = short? s.text.slice(head.length):'';
+    return `<div class="stop-card ${done[s.id]?'done':''}" id="card-${s.id}">
+      <span class="num-seal">${i+1}</span>
+      <h3>${s.name}</h3>
+      <p class="gps">${s.km}. km · 📍 ${s.lat.toFixed(5)}N, ${s.lng.toFixed(5)}E</p>
+      <p>${head}${short?`<span class="more" id="more-${s.id}">${rest}</span> <button class="readmore-btn" onclick="toggleMore('${s.id}',this)">více…</button>`:''}</p>
+      <div class="actions">
+        <a class="show" onclick="focusStop('${s.id}')">Na mapě</a>
+        <a class="nav" href="https://mapy.com/fnc/v1/route?end=${s.lng},${s.lat}&routeType=bike_road&navigate=true" target="_blank" rel="noopener">Navigovat</a>
+        <button class="speak" onclick="speakStop('${s.id}',this)" title="Přečíst nahlas">🔊</button>
+      </div>
+    </div>`;
+  }).join('');
+  STOPS.forEach(s=>{
+    const c=document.getElementById('card-'+s.id);
+    c.addEventListener('click',e=>{ if(e.target.closest('a,button'))return; toggleDone(s.id); });
+  });
+  updateVisited();
+}
+function updateVisited(){
+  const done=store.get('done',{});
+  const n=STOPS.filter(s=>done[s.id]).length;
+  const el=document.getElementById('visitedChip');
+  if(el) el.textContent=`Navštíveno ${n} z ${STOPS.length}`;
+}
+
+/* ---------- předčítání nahlas ---------- */
+let speaking=null, audioEl=null;
+function stopSpeaking(){
+  if(speechSynthesis.speaking) speechSynthesis.cancel();
+  if(audioEl){audioEl.pause(); audioEl=null;}
+  if(speaking){speaking.classList.remove('on'); speaking.textContent='🔊'; speaking=null;}
+}
+function speakStop(id,btn){
+  if(speaking===btn){ stopSpeaking(); return; }
+  stopSpeaking();
+  const s=STOPS.find(x=>x.id===id);
+  if(AUDIO[id]){
+    audioEl=new Audio(AUDIO[id]);
+    audioEl.play().catch(()=>alert('Nahrávku se nepodařilo přehrát.'));
+    audioEl.onended=stopSpeaking;
+  } else {
+    if(!('speechSynthesis' in window)){alert('Tvůj prohlížeč neumí předčítání.');return;}
+    const u=new SpeechSynthesisUtterance(s.name+'. '+s.text.replace(/["„"]/g,''));
+    u.lang='cs-CZ'; u.rate=0.95;
+    u.onend=stopSpeaking;
+    speechSynthesis.speak(u);
+  }
+  speaking=btn; btn.classList.add('on'); btn.textContent='⏹';
+}
+function toggleMore(id,btn){
+  const m=document.getElementById('more-'+id);
+  m.classList.toggle('open'); btn.textContent=m.classList.contains('open')?'méně':'více…';
+}
+function toggleDone(id){
+  const done=store.get('done',{}); done[id]=!done[id]; store.set('done',done);
+  const c=document.getElementById('card-'+id); if(c)c.classList.toggle('done',done[id]);
+  if(stopMarkers[id])map.closePopup();
+  updateVisited();
+}
+
+/* =============== ČASOVÁ OSA =============== */
+function renderTimeline(){
+  document.getElementById('timeline').innerHTML = TIMELINE.map(e=>
+    `<div class="tl-item ${e.key?'key':''}">
+      <div class="tl-date">${e.d}</div>
+      <h4>${e.t}</h4><p>${e.x}</p>
+    </div>`).join('');
+}
+
+/* =============== SOUTĚŽ =============== */
+function renderQuests(){
+  const st=store.get('quests2',{});
+  document.getElementById('questList').innerHTML = QUESTS.map(q=>{
+    if(q.type==='check'){
+      const on=!!st[q.id];
+      return `<div class="quest ${on?'on':''}" onclick="toggleQuest('${q.id}')" id="q-${q.id}">
+        <div class="check">✓</div>
+        <div class="body"><div class="t">${q.t}</div>${q.note?`<div class="note">${q.note}</div>`:''}</div>
+        <div class="pts">+${q.p}</div>
+      </div>`;
+    }
+    const v=st[q.id]||0;
+    return `<div class="quest counter ${v>0?'on':''}" id="q-${q.id}">
+      <div class="body"><div class="t">${q.t}</div>${q.note?`<div class="note">${q.note}</div>`:''}</div>
+      <div class="ctr">
+        <button onclick="bumpQuest('${q.id}',-1)" aria-label="ubrat">−</button>
+        <span class="val" id="qv-${q.id}">${v}</span>
+        <button onclick="bumpQuest('${q.id}',1)" aria-label="přidat">+</button>
+      </div>
+      <div class="pts" id="qp-${q.id}">${questPoints(q,v)} b.</div>
+    </div>`;
+  }).join('')
+  + `<button class="send-results" id="btnSend">📨 Odeslat výsledky a poznámky Vítkovi</button>`;
+  document.getElementById('btnSend').addEventListener('click',shareResults);
+  updateScore();
+}
+function toggleQuest(id){
+  const st=store.get('quests2',{}); st[id]=!st[id]; store.set('quests2',st);
+  document.getElementById('q-'+id).classList.toggle('on',!!st[id]); updateScore();
+}
+function bumpQuest(id,d){
+  const q=QUESTS.find(x=>x.id===id);
+  const st=store.get('quests2',{});
+  st[id]=Math.max(0,Math.min(q.max||99,(st[id]||0)+d));
+  store.set('quests2',st);
+  document.getElementById('qv-'+id).textContent=st[id];
+  document.getElementById('qp-'+id).textContent=questPoints(q,st[id])+' b.';
+  document.getElementById('q-'+id).classList.toggle('on',st[id]>0);
+  updateScore();
+}
+function totalScore(){
+  const st=store.get('quests2',{});
+  return QUESTS.reduce((a,q)=>a+questPoints(q,st[q.id]),0);
+}
+function updateScore(){ document.getElementById('scoreNum').textContent=totalScore(); }
+function shareResults(){
+  const st=store.get('quests2',{});
+  const nick=store.get('nick','');
+  const lines=QUESTS.map(q=>{
+    if(q.type==='check') return (st[q.id]?'✅':'▫️')+' '+q.t+(st[q.id]?` (+${q.p} b.)`:'');
+    return `🔢 ${q.t}: ${st[q.id]||0} ${q.unit} (${questPoints(q,st[q.id])} b.)`;
+  });
+  // přibalit poznámky z knihy
+  const notes=store.get('notes',{});
+  const noteLines=[];
+  STOPS.forEach((s,i)=>{ if((notes[s.id]||'').trim()) noteLines.push(`${i+1}. ${s.name}:\n${notes[s.id].trim()}`); });
+  if((notes.free||'').trim()) noteLines.push('Volné poznámky:\n'+notes.free.trim());
+  const notesBlock = noteLines.length ? `\n\n— POZNÁMKY Z KNIHY —\n${noteLines.join('\n\n')}` : '\n\n(Kniha bez poznámek.)';
+  const text=`Putování po stopách J. Toufara — 4. ročník (11. 7. 2026)\nPoutník: ${nick||'…'}\n\n${lines.join('\n')}\n\nCELKEM: ${totalScore()} bodů\n(Loňský rekord: Vítek 196 b.)${notesBlock}`;
+  if(navigator.share){ navigator.share({title:'Výsledky soutěže — Toufar 2026', text}).catch(()=>{}); }
+  else{ location.href='mailto:vit.pechlat@gmail.com?subject='+encodeURIComponent('Výsledky soutěže — Toufar 2026')+'&body='+encodeURIComponent(text); }
+}
+
+/* =============== KNIHA / POZNÁMKY =============== */
+function renderNotes(){
+  const notes=store.get('notes',{});
+  document.getElementById('notesList').innerHTML = STOPS.map(s=>
+    `<div class="note-place">${s.name}</div>
+     <div style="position:relative"><textarea class="book" data-note="${s.id}" placeholder="Zápisky, dojmy, koho jsi potkal…">${(notes[s.id]||'').replace(/</g,'&lt;')}</textarea></div>`
+  ).join('') +
+  `<div class="note-place">Volné poznámky</div>
+   <textarea class="book" data-note="free" placeholder="Cokoli dalšího…">${(notes.free||'').replace(/</g,'&lt;')}</textarea>`;
+  document.querySelectorAll('textarea.book').forEach(t=>{
+    t.addEventListener('input',()=>{
+      const notes=store.get('notes',{}); notes[t.dataset.note]=t.value; store.set('notes',notes);
+    });
+  });
+}
+
+/* =============== MINULÉ VÝPRAVY =============== */
+let yearSel = YEARS[0].y;
+function renderYears(){
+  document.getElementById('yearTabs').innerHTML = YEARS.map(v=>
+    `<button class="${v.y===yearSel?'sel':''}" onclick="pickYear(${v.y})">${v.y}</button>`).join('');
+  const v=YEARS.find(x=>x.y===yearSel);
+  document.getElementById('yearContent').innerHTML =
+    `<div class="block"><p>${v.text}</p></div>
+     <div class="gal">${v.photos.map(g=>
+       `<figure>${g.src?`<img src="${g.src}" loading="lazy" alt="${g.cap}">`:`<div class="ph">📷<br>${g.cap}</div>`}
+        <figcaption>${g.cap}</figcaption></figure>`).join('')}</div>`;
+}
+function pickYear(y){ yearSel=y; renderYears(); }
+
+/* =============== POZVÁNKA / QR =============== */
+function initShareApp(){
+  const url=location.href;
+  const isWeb=location.protocol.startsWith('http');
+  const btn=document.getElementById('btnShareApp');
+  if(!isWeb){
+    document.getElementById('shareHint').style.display='block';
+    document.getElementById('qrBox').innerHTML='<div class="ph" style="height:110px">QR se objeví po nahrání na web</div>';
+  } else {
+    const load=(src)=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+    load('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js')
+      .then(()=>{ new QRCode(document.getElementById('qrBox'),{text:url,width:170,height:170,colorDark:'#2b2119',colorLight:'#f6efdf'}); })
+      .catch(()=>{});
+  }
+  btn.addEventListener('click',()=>{
+    if(navigator.share) navigator.share({title:'Po stopách faráře Toufara — 4. ročník', text:'Přidej se k putování 11. 7. 2026! Appka s mapou, příběhem a soutěží:', url}).catch(()=>{});
+    else if(navigator.clipboard){ navigator.clipboard.writeText(url); alert('Odkaz zkopírován do schránky.'); }
+  });
+}
+
+/* =============== ODPOČET =============== */
+function initCountdown(){
+  const target=new Date(2026,6,11); // 11. 7. 2026
+  const today=new Date(); today.setHours(0,0,0,0);
+  const d=Math.round((target-today)/86400000);
+  const el=document.getElementById('countdown');
+  if(d>1) el.textContent=`ještě ${d} dní`;
+  else if(d===1) el.textContent='už zítra!';
+  else if(d===0) el.textContent='DNES — šťastnou cestu!';
+  else el.textContent='';
+}
+
+/* =============== NAVIGACE MEZI POHLEDY =============== */
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+  if(name==='map'&&map)setTimeout(()=>map.invalidateSize(),60);
+  document.querySelector('main').scrollTop=0;
+}
+
+/* =============== START =============== */
+window.addEventListener('DOMContentLoaded',()=>{
+  initMap();
+  renderStops(); renderTimeline(); renderQuests(); renderNotes(); renderYears();
+  initShareApp(); initCountdown();
+
+  document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+  document.getElementById('btnLocate').addEventListener('click',locateMe);
+  document.getElementById('btnFit').addEventListener('click',fitRoute);
+  document.getElementById('btnLive').addEventListener('click',()=> live.on?stopLive():openLiveModal());
+  document.getElementById('liveGo').addEventListener('click',startLive);
+  document.getElementById('liveCancel').addEventListener('click',()=>document.getElementById('liveModal').classList.remove('open'));
+  document.getElementById('peersHead').addEventListener('click',()=>{
+    const l=document.getElementById('peersList'); l.classList.toggle('collapsed');
+    document.getElementById('peersChevron').textContent = l.classList.contains('collapsed')?'▸':'▾';
+  });
+});
+</script>
+</body>
+</html>
