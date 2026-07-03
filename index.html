@@ -416,18 +416,8 @@ a.plainlink{color:var(--accent);font-weight:700}
         <p style="margin:8px 0 4px;font-size:11.5px;color:var(--gold);font-style:italic;text-align:center">Objel(a) jsi celou trasu a chybíš tu? Napiš Vítkovi.</p>
       </div>
 
-      <div class="section-title" style="margin-top:20px">Pozvi další poutníky</div>
-      <div class="block share-block">
-        <p>Ukaž sousedovi QR kód, nebo mu pošli odkaz — appku tím dostane každý do svého telefonu.</p>
-        <div class="qr-wrap"><div id="qrBox"></div></div>
-        <button class="send-results" id="btnShareApp" style="margin-top:10px">📲 Sdílet odkaz na appku</button>
-        <p class="note-priv" id="shareHint" style="display:none">QR kód a sdílení začnou fungovat, jakmile appka poběží na internetové adrese (GitHub Pages / Netlify).</p>
-      </div>
 
       <div class="section-title" style="margin-top:20px">Poznej Toufarův příběh hlouběji</div>
-      <div class="block">
-        <p>Smyslem putování je šíření povědomí o osudu P. Josefa Toufara — jedné z prvních obětí komunistického režimu a vedle Milady Horákové nejvýmluvnějšího symbolu totalitní zvůle u nás.</p>
-      </div>
       <ul class="linklist">
         <li><a class="plainlink" href="http://joseftoufar.cz/" target="_blank" rel="noopener">joseftoufar.cz — oficiální stránky o faráři →</a></li>
         <li><a class="plainlink" href="https://cs.wikipedia.org/wiki/Josef_Toufar" target="_blank" rel="noopener">Wikipedie: Josef Toufar →</a></li>
@@ -481,6 +471,15 @@ a.plainlink{color:var(--accent);font-weight:700}
         <li><a class="plainlink" href="https://mapy.com/s/jaburabaco" target="_blank" rel="noopener">👨‍👩‍👧 Dětský okruh (10 km) →</a></li>
         <li><a class="plainlink" href="https://mapy.com/s/ladabogora" target="_blank" rel="noopener">🏍️ Trasa pro motorkáře do rodného domu →</a></li>
       </ul>
+
+
+      <div class="section-title" style="margin-top:20px">Pozvi další poutníky</div>
+      <div class="block share-block">
+        <p>Ukaž sousedovi QR kód, nebo mu pošli odkaz — appku tím dostane každý do svého telefonu.</p>
+        <div class="qr-wrap"><div id="qrBox"></div></div>
+        <button class="send-results" id="btnShareApp" style="margin-top:10px">📲 Sdílet odkaz na appku</button>
+        <p class="note-priv" id="shareHint" style="display:none">QR kód a sdílení začnou fungovat, jakmile appka poběží na internetové adrese (GitHub Pages / Netlify).</p>
+      </div>
 
       <p class="tiny">Připomínka narození J. Toufara (* 14. 7. 1902) · v Číhošti buď nejpozději v 16:00</p>
     </section>
@@ -584,7 +583,7 @@ function questPoints(q,val){
    nebo kamkoli s veřejným odkazem. Prázdný 'src' zobrazí zástupný rámeček.
 */
 const YEARS = [
-  {y:2025, text:'3. ročník — Zase pršelo, jak už se na putování téměř sluší. Novinkou byla trasa směrem k želivskému klášteru, poutníci se však raději drželi pospolu na osvědčené hlavní trase — a udělali dobře. Cestu okořenily neprůjezdné zkratky zarostlé kopřivami i pár defektů (důkazy viz fotky). Vše ale dobře dopadlo a den zakončilo příjemné posezení u ohně s LDN, tentokrát stylově pod deštníky.',
+  {y:2025, text:'3. ročník — Zase pršelo, jak už se na putování téměř sluší. Novinkou byla trasa směrem k Želivskému klášteru, poutníci se však raději drželi pospolu na osvědčené hlavní trase — a udělali dobře. Cestu okořenily neprůjezdné zkratky zarostlé kopřivami i pár defektů (důkazy viz fotky). Vše ale dobře dopadlo a den zakončilo příjemné posezení u ohně s LDN, tentokrát stylově pod deštníky.',
    photos:[{src:'fotky/2025-ohen.jpg',cap:'Posezení u ohně — pod deštníky'},{src:'fotky/2025-defekt.jpg',cap:'Defekt na trase'},{src:'fotky/2025-zkratka.jpg',cap:'Neprůjezdná zkratka'},{src:'fotky/2025-plakat.jpg',cap:'Pozvánka ročníku s QR kódem'}]},
   {y:2024, text:'2. ročník — Hodně účastníků dorazilo už v pátek a večer jsme společně poseděli v kulturní místnosti místní hospody. Ročník přinesl i historický milník: prvnímu poutníkovi se podařilo zdolat celou trasu s almanachem na krku. Po sobotní vyjížďce jsme se pak sešli ve škole, kde jsme mohli besedovat s panem Milošem Doležalem — autorem knih o páteru Toufarovi.',
    photos:[{src:'fotky/2024-hospoda.jpg',cap:'Páteční posezení v kulturní místnosti'},{src:'fotky/2024-almanach.jpg',cap:'Celá trasa s almanachem na krku'},{src:'fotky/2024-vecer.jpg',cap:'Večerní atmosféra'}]},
