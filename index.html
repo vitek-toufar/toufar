@@ -203,6 +203,14 @@ ol.patero{margin:4px 0 2px;padding-left:6px;list-style:none;counter-reset:pat}
 ol.patero li{counter-increment:pat;position:relative;padding:7px 0 7px 34px;font-size:14px;color:var(--ink-soft);border-bottom:1px dashed var(--line)}
 ol.patero li:last-child{border:none}
 ol.patero li::before{content:counter(pat)".";position:absolute;left:2px;top:7px;font-weight:700;color:var(--gold);font-size:16px}
+.finisher{padding:8px 0;border-bottom:1px dashed var(--line);cursor:pointer}
+.finisher:last-child{border:none}
+.finisher .frow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.finisher .fname{font-size:14px;font-weight:700;color:var(--ink)}
+.finisher .fcount{font-size:12.5px;font-weight:700;color:#fff;background:var(--gold);padding:2px 10px;border-radius:11px;box-shadow:0 1px 3px var(--shadow);flex:0 0 auto}
+.finisher .fyrs{display:none;gap:4px;flex-wrap:wrap;margin-top:6px}
+.finisher .fyrs.open{display:flex}
+.finisher .fyrs i{font-style:normal;font-size:10.5px;font-weight:700;color:var(--ink-soft);background:var(--paper-2);border:1px solid var(--line);padding:1.5px 7px;border-radius:9px}
 
 /* ---------- Quests ---------- */
 .score-banner{
@@ -402,6 +410,12 @@ a.plainlink{color:var(--accent);font-weight:700}
       <div class="year-tabs" id="yearTabs"></div>
       <div id="yearContent"></div>
 
+      <div class="section-title" style="margin-top:20px">Zdolali celou trasu</div>
+      <div class="block" style="padding:8px 14px">
+        <div id="finishersList"></div>
+        <p style="margin:8px 0 4px;font-size:11.5px;color:var(--gold);font-style:italic;text-align:center">Objel(a) jsi celou trasu a chybíš tu? Napiš Vítkovi.</p>
+      </div>
+
       <div class="section-title" style="margin-top:20px">Pozvi další poutníky</div>
       <div class="block share-block">
         <p>Ukaž sousedovi QR kód, nebo mu pošli odkaz — appku tím dostane každý do svého telefonu.</p>
@@ -580,6 +594,25 @@ const YEARS = [
    photos:[{src:'fotky/2022-poutnici.jpg',cap:'Dvanáct pěších, dva cyklisté a dva psi'},{src:'fotky/2022-hospoda.jpg',cap:'Výzva ročníku: uzavřené hospody'}]},
 ];
 /* ⬆️⬆️⬆️ konec sekce minulých výprav ⬆️⬆️⬆️ */
+
+/* ⬇️⬇️⬇️ SÍŇ SLÁVY — poutníci, kteří zdolali celou trasu ⬇️⬇️⬇️
+   Formát: {n:'Jméno', y:[roky]}. Ukázková jména nahraď skutečnými. */
+const FINISHERS = [
+  {n:'Vítek', y:[2022,2023,2024,2025]},
+  {n:'Václav B.', y:[2022,2024]},
+  {n:'David A.', y:[2023,2025]},
+  {n:'Ivouch', y:[2023]},
+  {n:'Votok', y:[2023]},
+  {n:'Jan St.', y:[2023]},
+  {n:'Im', y:[2023]},
+  {n:'Bob', y:[2023]},
+  {n:'Tomáš H.', y:[2024]},
+  {n:'Vinnie', y:[2024]},
+  {n:'Sleepy', y:[2025]},
+  {n:'Pasi', y:[2025]},
+  {n:'Louža', y:[2025]},
+];
+/* ⬆️⬆️⬆️ konec síně slávy ⬆️⬆️⬆️ */
 
 /* ================================================================
    FIREBASE — živé sdílení polohy mezi telefony (VOLITELNÉ)
@@ -1108,6 +1141,21 @@ function renderProfile(){
     </svg>`;
 }
 
+/* =============== SÍŇ SLÁVY =============== */
+function renderFinishers(){
+  const list=[...FINISHERS].sort((a,b)=> b.y.length-a.y.length || Math.min(...a.y)-Math.min(...b.y) || a.n.localeCompare(b.n,'cs'));
+  const maxN=list.length?list[0].y.length:0;
+  document.getElementById('finishersList').innerHTML = list.map((f,i)=>
+    `<div class="finisher" onclick="toggleFinYears(${i})">
+      <div class="frow">
+        <span class="fname">${f.y.length===maxN&&maxN>1?'🏅 ':''}${f.n}</span>
+        <span class="fcount">${f.y.length}×</span>
+      </div>
+      <div class="fyrs" id="fyrs-${i}">${f.y.slice().sort().map(y=>`<i>${y}</i>`).join('')}</div>
+    </div>`).join('') || '<p style="font-size:13px;color:var(--ink-soft)">Zatím prázdné — buď první!</p>';
+}
+function toggleFinYears(i){ document.getElementById('fyrs-'+i).classList.toggle('open'); }
+
 /* =============== POZVÁNKA / QR =============== */
 function initShareApp(){
   const url=location.href;
@@ -1153,7 +1201,7 @@ function showView(name){
 window.addEventListener('DOMContentLoaded',()=>{
   initMap();
   renderStops(); renderTimeline(); renderQuests(); renderNotes(); renderYears();
-  initShareApp(); initCountdown(); renderProfile();
+  initShareApp(); initCountdown(); renderProfile(); renderFinishers();
 
   document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
   document.getElementById('btnLocate').addEventListener('click',locateMe);
