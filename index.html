@@ -526,7 +526,7 @@ const QUESTS = [
   {id:'q6', t:'Dojet na geografický střed ČR', p:15, type:'check'},
   {id:'q7', t:'Vykoupat se v peřejích Sázavy', p:20, type:'check'},
   {id:'q4', t:'Uctít památku J. Toufara u nápoje', note:'komorně, po svém · 1 bod za nápoj', p:1, type:'count', unit:'nápojů', max:99},
-  {id:'q8', t:'Podpisy svědků tvého počínání', note:'19 podpisů = 50 b. · 20. podpis hostinského ve Lhotě = +300 b.', type:'count', unit:'podpisů', max:20, scoring:'signatures'},
+  {id:'q8', t:'Placák s 19 poutníky', note:'symbol 19 svědků číhošťského zázraku · 19 placáků = 50 b. · 20. placák s hostinským ve Lhotě = +300 b.', type:'count', unit:'placáků', max:20, scoring:'signatures'},
 ];
 function questPoints(q,val){
   if(q.type==='check') return val?q.p:0;
@@ -538,17 +538,16 @@ function questPoints(q,val){
    Ke každému roku doplň text ohlédnutí a odkazy na fotky (URL do 'src').
    Fotky nahraj vedle appky na GitHub (pak stačí např. 'fotky/2024-start.jpg')
    nebo kamkoli s veřejným odkazem. Prázdný 'src' zobrazí zástupný rámeček.
-   Text z almanachu (20 cyklistů, 4 pěší, 1 kůň…) je zařazen pod rok 2023 —
-   pokud patří jinam, přesuň ho. */
+*/
 const YEARS = [
-  {y:2025, text:'Sem doplň ohlédnutí za ročníkem 2025…',
+  {y:2025, text:'3. ročník — sem doplň ohlédnutí…',
    photos:[{src:'',cap:'2025 — doplň fotku'},{src:'',cap:'2025 — doplň fotku'}]},
-  {y:2024, text:'Sem doplň ohlédnutí za ročníkem 2024…',
+  {y:2024, text:'2. ročník — sem doplň ohlédnutí…',
    photos:[{src:'',cap:'2024 — doplň fotku'},{src:'',cap:'2024 — doplň fotku'}]},
-  {y:2023, text:'Počasí přálo a účast byla hojná. Na trasu postupně vyrazilo 20 cyklistů, 4 pěší a 1 kůň. Po cestě jsme u Křižné studánky narazili na dalšího chodce, který se o putování dozvěděl pravděpodobně v hospodě ve Lhotě a očekával davy účastníků. Páteční kultura byla silná, přinesla nečekané přátelství, kdy Votok obdivoval um hostinského čepovat pivo a seřezávat pěnu nožem. Večerní výkon se bohužel podepsal na sobotním a trasu dokončilo pouze 8 cyklistů, 0 pěších a 0 koňů. 8 cyklistů se tedy zařadilo mezi prvních 10 lidí, kteří kdy trasu dokončili. Nejkomplikovanější dopravu na místo srazu pak měla Vanda, která se z cesty vracela domů a pak to vzala ještě přes jinou Kamennou Lhotu. Naopak přesná navigace pomohla rodině Suchých na rychlé cestě Itálie–Kamenná Lhota. Doprovodnou soutěž vyhrál Vítek s rekordním počtem 196 bodů.',
+  {y:2023, text:'1. ročník — Počasí přálo a účast byla hojná. Na trasu postupně vyrazilo 20 cyklistů, 4 pěší a 1 kůň. Po cestě jsme u Křižné studánky narazili na dalšího chodce, který se o putování dozvěděl pravděpodobně v hospodě ve Lhotě a očekával davy účastníků. Páteční kultura byla silná, přinesla nečekané přátelství, kdy Votok obdivoval um hostinského čepovat pivo a seřezávat pěnu nožem. Večerní výkon se bohužel podepsal na sobotním a trasu dokončilo pouze 8 cyklistů, 0 pěších a 0 koňů. 8 cyklistů se tedy zařadilo mezi prvních 10 lidí, kteří kdy trasu dokončili. Nejkomplikovanější dopravu na místo srazu pak měla Vanda, která se z cesty vracela domů a pak to vzala ještě přes jinou Kamennou Lhotu. Naopak přesná navigace pomohla rodině Suchých na rychlé cestě Itálie–Kamenná Lhota. Doprovodnou soutěž vyhrál Vítek s rekordním počtem 196 bodů.',
    photos:[{src:'',cap:'Start u Zemljanky'},{src:'',cap:'Křižná studánka'},{src:'',cap:'Páteční posezení u ohně'},{src:'',cap:'Cíl — 8 cyklistů'}]},
-  {y:2022, text:'Sem doplň ohlédnutí za ročníkem 2022…',
-   photos:[{src:'',cap:'2022 — doplň fotku'},{src:'',cap:'2022 — doplň fotku'}]},
+  {y:2022, text:'0. ročník — Ranní temnota a přívalový déšť nemohly zlomit odhodlané srdce skupiny, která se vydala na cestu za připomínkou faráře Josefa Toufara. Dva cyklisté a dvanáct pěších, doprovázených dvěma psy, vyrazili za mokra, ale s pevnou vírou v srdci. Stejně jako poutníci nemohli ovlivnit počasí, tak si někdy lidé nemohou vybírat okolnosti. Nicméně, nejdůležitější je odhodlání pokračovat, bez ohledu na nástrahy. Když déšť ustal, byli naši cyklisté vyčerpaní, avšak neztratili odhodlání. Jeden s nemocí, druhý fyzicky vyčerpaný, ale oba dojeli až na konec trasy a splnili většinu úkolů, dokázali získat 173 bodů, což je dosavadní rekord! Loňský ročník byl putováním víry, plným výzev, především polo a zcela uzavřených hospod, ale také odvahy a vytrvalosti. S nadějí a vírou se těšíme na další ročník. Bez ohledu na překážky, budeme pokračovat v cestě, inspirováni odvahou a odhodláním našich předchůdců. (Autor: ChatGPT-4)',
+   photos:[{src:'fotky/2022-poutnici.jpg',cap:'Dvanáct pěších, dva cyklisté a dva psi'},{src:'fotky/2022-hospoda.jpg',cap:'Výzva ročníku: uzavřené hospody'}]},
 ];
 /* ⬆️⬆️⬆️ konec sekce minulých výprav ⬆️⬆️⬆️ */
 
