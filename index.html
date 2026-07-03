@@ -608,6 +608,7 @@ const FINISHERS = [
   {n:'Bob', y:[2023]},
   {n:'Tomáš H.', y:[2024]},
   {n:'Vinnie', y:[2024]},
+  {n:'Robin', y:[2024]},
   {n:'Sleepy', y:[2025]},
   {n:'Pasi', y:[2025]},
   {n:'Louža', y:[2025]},
@@ -1144,11 +1145,10 @@ function renderProfile(){
 /* =============== SÍŇ SLÁVY =============== */
 function renderFinishers(){
   const list=[...FINISHERS].sort((a,b)=> b.y.length-a.y.length || Math.min(...a.y)-Math.min(...b.y) || a.n.localeCompare(b.n,'cs'));
-  const maxN=list.length?list[0].y.length:0;
   document.getElementById('finishersList').innerHTML = list.map((f,i)=>
     `<div class="finisher" onclick="toggleFinYears(${i})">
       <div class="frow">
-        <span class="fname">${f.y.length===maxN&&maxN>1?'🏅 ':''}${f.n}</span>
+        <span class="fname">${f.n}</span>
         <span class="fcount">${f.y.length}×</span>
       </div>
       <div class="fyrs" id="fyrs-${i}">${f.y.slice().sort().map(y=>`<i>${y}</i>`).join('')}</div>
