@@ -50,7 +50,7 @@ body{
 
 /* ---------- Header ---------- */
 header{
-  padding:calc(var(--safe-t) + 16px) 18px 14px;
+  padding:calc(var(--safe-t) + 9px) 16px 8px;
   background:
     radial-gradient(ellipse at 85% 20%, rgba(201,168,92,.14), transparent 55%),
     linear-gradient(180deg,#241a10,#3a2c1f);
@@ -59,12 +59,11 @@ header{
   border-bottom:3px double var(--gold);
   flex:0 0 auto;
 }
-header::before{content:"✝";position:absolute;right:-14px;bottom:-34px;font-size:120px;color:rgba(201,168,92,.08);pointer-events:none;line-height:1}
-header .kicker{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent-2);font-weight:700;margin:0}
-header h1{margin:3px 0 0;font-size:21px;font-weight:700;letter-spacing:.01em;line-height:1.18;text-shadow:0 1px 3px rgba(0,0,0,.4)}
-header .date{margin:5px 0 0;font-size:12.5px;color:#d9c9a8;font-style:italic;display:flex;align-items:center;gap:8px}
+header::before{content:"✝";position:absolute;right:-10px;bottom:-20px;font-size:64px;color:rgba(201,168,92,.08);pointer-events:none;line-height:1}
+header h1{margin:0 26px 0 0;font-size:16.5px;font-weight:700;letter-spacing:.01em;line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+header .date{margin:3px 0 0;font-size:11.5px;color:#d9c9a8;font-style:italic;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 header .date::before{content:"❦";color:var(--gold);font-style:normal;font-size:13px}
-header .cross{position:absolute;right:16px;top:calc(var(--safe-t) + 14px);font-size:26px;color:var(--gold);opacity:.9;text-shadow:0 0 12px rgba(201,168,92,.5)}
+header .cross{position:absolute;right:14px;top:calc(var(--safe-t) + 8px);font-size:18px;color:var(--gold);opacity:.9;text-shadow:0 0 10px rgba(201,168,92,.5)}
 
 /* ---------- Views ---------- */
 main{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative}
@@ -318,9 +317,8 @@ a.plainlink{color:var(--accent);font-weight:700}
 
   <header>
     <span class="cross">✝</span>
-    <p class="kicker">Poutní deník · 4. ročník</p>
-    <h1>Po stopách faráře<br>Josefa Toufara</h1>
-    <p class="date">Sobota 11. 7. 2026 · Kamenná Lhota → Číhošť a zpět <span class="chip" id="countdown"></span></p>
+    <h1>Po stopách faráře Josefa Toufara</h1>
+    <p class="date">4. ročník · so 11. 7. 2026 · Lhota → Číhošť a zpět <span class="chip" id="countdown"></span></p>
   </header>
 
   <main>
@@ -365,7 +363,7 @@ a.plainlink{color:var(--accent);font-weight:700}
       <div class="section-title">Bodovaná soutěž</div>
       <div class="score-banner">
         <div><div class="num" id="scoreNum">0</div><div class="lbl">bodů</div></div>
-        <div class="rec">Loňský rekord:<br><b>Vítek — 196 b.</b></div>
+        <div class="rec">Rekord soutěže (2023):<br><b>Vítek — 196 b.</b></div>
       </div>
       <div class="hint">Odškrtávej úkoly během dne — body se počítají samy a drží se v telefonu. Tlačítkem dole pošleš Vítkovi <b>výsledky i se svými poznámkami z knihy</b>.</div>
       <div id="questList"></div>
@@ -545,8 +543,8 @@ function questPoints(q,val){
 const YEARS = [
   {y:2025, text:'3. ročník — Zase pršelo, jak už se na putování téměř sluší. Novinkou byla trasa směrem k želivskému klášteru, poutníci se však raději drželi pospolu na osvědčené hlavní trase — a udělali dobře. Cestu okořenily neprůjezdné zkratky zarostlé kopřivami i pár defektů (důkazy viz fotky). Vše ale dobře dopadlo a den zakončilo příjemné posezení u ohně s LDN, tentokrát stylově pod deštníky.',
    photos:[{src:'fotky/2025-ohen.jpg',cap:'Posezení u ohně — pod deštníky'},{src:'fotky/2025-defekt.jpg',cap:'Defekt na trase'},{src:'fotky/2025-zkratka.jpg',cap:'Neprůjezdná zkratka'},{src:'fotky/2025-plakat.jpg',cap:'Pozvánka ročníku s QR kódem'}]},
-  {y:2024, text:'2. ročník — sem doplň ohlédnutí…',
-   photos:[{src:'',cap:'2024 — doplň fotku'},{src:'',cap:'2024 — doplň fotku'}]},
+  {y:2024, text:'2. ročník — Hodně účastníků dorazilo už v pátek a večer jsme společně poseděli v kulturní místnosti místní hospody. Ročník přinesl i historický milník: prvnímu poutníkovi se podařilo zdolat celou trasu s almanachem na krku. Po sobotní vyjížďce jsme se pak sešli ve škole, kde jsme mohli besedovat s panem Milošem Doležalem — autorem knih o páteru Toufarovi.',
+   photos:[{src:'fotky/2024-hospoda.jpg',cap:'Páteční posezení v kulturní místnosti'},{src:'fotky/2024-almanach.jpg',cap:'Celá trasa s almanachem na krku'},{src:'fotky/2024-vecer.jpg',cap:'Večerní atmosféra'}]},
   {y:2023, text:'1. ročník — Počasí přálo a účast byla hojná. Na trasu postupně vyrazilo 20 cyklistů, 4 pěší a 1 kůň. Po cestě jsme u Křižné studánky narazili na dalšího chodce, který se o putování dozvěděl pravděpodobně v hospodě ve Lhotě a očekával davy účastníků. Páteční kultura byla silná, přinesla nečekané přátelství, kdy Votok obdivoval um hostinského čepovat pivo a seřezávat pěnu nožem. Večerní výkon se bohužel podepsal na sobotním a trasu dokončilo pouze 8 cyklistů, 0 pěších a 0 koňů. 8 cyklistů se tedy zařadilo mezi prvních 10 lidí, kteří kdy trasu dokončili. Nejkomplikovanější dopravu na místo srazu pak měla Vanda, která se z cesty vracela domů a pak to vzala ještě přes jinou Kamennou Lhotu. Naopak přesná navigace pomohla rodině Suchých na rychlé cestě Itálie–Kamenná Lhota. Doprovodnou soutěž vyhrál Vítek s rekordním počtem 196 bodů.',
    photos:[{src:'fotky/2023-lesni-pesina.jpg',cap:'Radost na lesní pěšině'},{src:'fotky/2023-lesni-kaple.jpg',cap:'Odpočinek v lesním kostele u Nezdínské studánky'},{src:'fotky/2023-andel.jpg',cap:'Zastavení u anděla'}]},
   {y:2022, text:'0. ročník — Ranní temnota a přívalový déšť nemohly zlomit odhodlané srdce skupiny, která se vydala na cestu za připomínkou faráře Josefa Toufara. Dva cyklisté a dvanáct pěších, doprovázených dvěma psy, vyrazili za mokra, ale s pevnou vírou v srdci. Stejně jako poutníci nemohli ovlivnit počasí, tak si někdy lidé nemohou vybírat okolnosti. Nicméně, nejdůležitější je odhodlání pokračovat, bez ohledu na nástrahy. Když déšť ustal, byli naši cyklisté vyčerpaní, avšak neztratili odhodlání. Jeden s nemocí, druhý fyzicky vyčerpaný, ale oba dojeli až na konec trasy a splnili většinu úkolů, dokázali získat 173 bodů, což je dosavadní rekord! Loňský ročník byl putováním víry, plným výzev, především polo a zcela uzavřených hospod, ale také odvahy a vytrvalosti. S nadějí a vírou se těšíme na další ročník. Bez ohledu na překážky, budeme pokračovat v cestě, inspirováni odvahou a odhodláním našich předchůdců. (Autor: ChatGPT-4)',
@@ -1007,7 +1005,7 @@ function shareResults(){
   STOPS.forEach((s,i)=>{ if((notes[s.id]||'').trim()) noteLines.push(`${i+1}. ${s.name}:\n${notes[s.id].trim()}`); });
   if((notes.free||'').trim()) noteLines.push('Volné poznámky:\n'+notes.free.trim());
   const notesBlock = noteLines.length ? `\n\n— POZNÁMKY Z KNIHY —\n${noteLines.join('\n\n')}` : '\n\n(Kniha bez poznámek.)';
-  const text=`Putování po stopách J. Toufara — 4. ročník (11. 7. 2026)\nPoutník: ${nick||'…'}\n\n${lines.join('\n')}\n\nCELKEM: ${totalScore()} bodů\n(Loňský rekord: Vítek 196 b.)${notesBlock}`;
+  const text=`Putování po stopách J. Toufara — 4. ročník (11. 7. 2026)\nPoutník: ${nick||'…'}\n\n${lines.join('\n')}\n\nCELKEM: ${totalScore()} bodů\n(Rekord soutěže: Vítek 196 b., 2023)${notesBlock}`;
   if(navigator.share){ navigator.share({title:'Výsledky soutěže — Toufar 2026', text}).catch(()=>{}); }
   else{ location.href='mailto:vit.pechlat@gmail.com?subject='+encodeURIComponent('Výsledky soutěže — Toufar 2026')+'&body='+encodeURIComponent(text); }
 }
