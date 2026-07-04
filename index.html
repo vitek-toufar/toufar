@@ -535,7 +535,7 @@ a.plainlink{color:var(--accent);font-weight:700}
     <div class="pas-foot">
       <div class="prog" id="pasProg"></div>
       <button class="send-results" id="btnCert" style="display:none" onclick="openCert()">✠ Vystavit poutní list</button>
-      <p class="pas-note">Razítko získáš klepnutím na zastávku (zde v pasu nebo na kartě). Červené razítko = potvrzeno GPS přímo na místě.</p>
+      <p class="pas-note">Razítko získáš klepnutím na zastávku (zde v pasu nebo na kartě). Červené razítko = potvrzeno GPS přímo na místě — takové je trvalé a nejde smazat. Šedé (ruční) lze dalším klepnutím zrušit.</p>
     </div>
   </div>
 </div>
@@ -1065,7 +1065,10 @@ function refreshStopUI(id){
 }
 function toggleDone(id){
   const done=store.get('done',{});
-  if(done[id]){ delete done[id]; store.set('done',done); if(map)map.closePopup(); refreshStopUI(id); return; }
+  if(done[id]){
+    if(done[id].v){ alert('Toto razítko je ověřené GPS přímo na místě — je trvalé a nejde omylem smazat. ✝'); return; }
+    delete done[id]; store.set('done',done); if(map)map.closePopup(); refreshStopUI(id); return;
+  }
   done[id]={t:Date.now(),v:false}; store.set('done',done);
   if(map)map.closePopup();
   refreshStopUI(id);
