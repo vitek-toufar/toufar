@@ -616,7 +616,7 @@ a.plainlink{color:var(--accent);font-weight:700}
       <button class="cancel" id="liveCancel">Zpět</button>
       <button class="go" id="liveGo">Začít sdílet</button>
     </div>
-    <p class="note-priv">🔒 Poloha se sdílí jen s lidmi se stejným kódem skupiny a jen dokud je sdílení zapnuté. Nic se neukládá po skončení akce.</p>
+    <p class="note-priv">🔒 Poloha se sdílí jen s lidmi se stejným kódem skupiny. Po vypnutí (či zavření appky) zůstane ostatním ještě ~30 minut vidět tvé poslední místo — tečka postupně bledne a pak zmizí. Historie tras se neukládá.</p>
   </div>
 </div>
 
@@ -990,7 +990,7 @@ function connectFirebase(){
     live.uid = store.get('uid', null) || ('u'+Math.random().toString(36).slice(2,9));
     store.set('uid',live.uid);
     const base = live.db.ref('groups/'+live.group+'/'+live.uid);
-    base.onDisconnect().remove();
+    base.onDisconnect().update({t:firebase.database.ServerValue.TIMESTAMP}); // poslední známé místo zůstane a stárne
     live.on=true; updateLiveBtn();
 
     live.watch = navigator.geolocation.watchPosition(p=>{
@@ -1054,7 +1054,10 @@ function stopLive(){
   live.lastData=null;
   document.getElementById('peersPanel').classList.remove('show');
   if(live.watch!=null) navigator.geolocation.clearWatch(live.watch);
-  if(live.db&&live.uid){ live.db.ref('groups/'+live.group+'/'+live.uid).remove(); live.db.ref('groups/'+live.group).off(); }
+  if(live.db&&live.uid){
+    live.db.ref('groups/'+live.group+'/'+live.uid).update({t:firebase.database.ServerValue.TIMESTAMP});
+    live.db.ref('groups/'+live.group).off();
+  }
   Object.values(peerMarkers).forEach(m=>map.removeLayer(m)); peerMarkers={}; live.peers={};
 }
 function updateLiveBtn(){
