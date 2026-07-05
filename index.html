@@ -122,6 +122,9 @@ a.map-btn{text-decoration:none;border:1px solid rgba(201,168,92,.5)}
 .mk-peer .dot{width:16px;height:16px;background:var(--live);border-radius:50%;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.4)}
 .mk-peer .lbl{margin-top:2px;background:var(--live);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;white-space:nowrap;font-family:sans-serif}
 .mk-peer .emo{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:16px;background:#fff;border:2px solid var(--live);border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,.4)}
+.mk-peer.stale{opacity:.5}
+.mk-peer.stale .emo{border-color:#8f8a7f}
+.mk-peer.stale .lbl{background:#8f8a7f}
 
 /* výběr ikony v modalu */
 .icon-pick{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
@@ -728,9 +731,11 @@ const FINISHERS = [
 const ENABLE_LIVE = false;               // ⬅️ přepni na true po vyplnění klíče
 const FIREBASE_CONFIG = {
   apiKey: "",
-  databaseURL: "",                        // např. https://tvuj-projekt.firebaseio.com
+  databaseURL: "",                        // např. https://toufar-default-rtdb.europe-west1.firebasedatabase.app
   projectId: ""
 };
+const PEER_STALE_MIN = 3;                 // po kolika minutách tečka zprůhlední
+const PEER_GONE_MIN  = 30;                // po kolika minutách tečka zmizí
 /* ================================================================ */
 
 /* ---------- ukládání do telefonu ---------- */
@@ -990,25 +995,38 @@ function connectFirebase(){
 
     live.watch = navigator.geolocation.watchPosition(p=>{
       setMe(p.coords.latitude,p.coords.longitude);
-      base.set({n:live.nick, i:live.icon, la:p.coords.latitude, ln:p.coords.longitude, t:Date.now()});
+      base.set({n:live.nick, i:live.icon, la:p.coords.latitude, ln:p.coords.longitude, t:firebase.database.ServerValue.TIMESTAMP});
     },()=>{},{enableHighAccuracy:true,maximumAge:5000});
 
     live.db.ref('groups/'+live.group).on('value',snap=>{
-      const data=snap.val()||{};
-      // odeber tečky, které zmizely
-      Object.keys(peerMarkers).forEach(id=>{if(!data[id]||id===live.uid){map.removeLayer(peerMarkers[id]);delete peerMarkers[id];}});
-      live.peers={};
-      Object.entries(data).forEach(([id,v])=>{
-        if(id===live.uid||!v.la)return;
-        live.peers[id]=v;
-        const emo=v.i||'📍';
-        const html=`<div class="mk-peer"><div class="emo">${emo}</div><div class="lbl">${(v.n||'?').replace(/[<>]/g,'')}</div></div>`;
-        if(peerMarkers[id]) { peerMarkers[id].setLatLng([v.la,v.ln]); peerMarkers[id].setIcon(L.divIcon({html,className:'',iconSize:[26,44],iconAnchor:[13,13]})); }
-        else peerMarkers[id]=L.marker([v.la,v.ln],{icon:L.divIcon({html,className:'',iconSize:[26,44],iconAnchor:[13,13]})}).addTo(map);
-      });
-      renderPeers();
+      live.lastData=snap.val()||{};
+      applyPeers();
     });
+    live.tick=setInterval(applyPeers,60000);  // stárnutí teček i bez nových dat
   }).catch(()=>alert('Nepodařilo se připojit k serveru sdílení.'));
+}
+function peerAgeMin(v){ return v.t?Math.max(0,(Date.now()-v.t)/60000):0; }
+function applyPeers(){
+  const data=live.lastData||{};
+  live.peers={};
+  Object.entries(data).forEach(([id,v])=>{
+    if(id===live.uid||!v.la)return;
+    if(peerAgeMin(v)>=PEER_GONE_MIN)return;   // dlouho se neozval — pryč z mapy
+    live.peers[id]=v;
+  });
+  // odebrat markery, kdo zmizel či zestárl
+  Object.keys(peerMarkers).forEach(id=>{if(!live.peers[id]){map.removeLayer(peerMarkers[id]);delete peerMarkers[id];}});
+  Object.entries(live.peers).forEach(([id,v])=>{
+    const age=peerAgeMin(v);
+    const stale=age>=PEER_STALE_MIN;
+    const emo=v.i||'📍';
+    const ageTxt=stale?` · ${Math.round(age)} min`:'';
+    const html=`<div class="mk-peer${stale?' stale':''}"><div class="emo">${emo}</div><div class="lbl">${(v.n||'?').replace(/[<>]/g,'')}${ageTxt}</div></div>`;
+    const icon=L.divIcon({html,className:'',iconSize:[26,44],iconAnchor:[13,13]});
+    if(peerMarkers[id]){ peerMarkers[id].setLatLng([v.la,v.ln]); peerMarkers[id].setIcon(icon); }
+    else peerMarkers[id]=L.marker([v.la,v.ln],{icon}).addTo(map);
+  });
+  renderPeers();
 }
 function nearestStop(la,ln){
   let best=null,bd=1e9;
@@ -1022,14 +1040,18 @@ function renderPeers(){
   if(!ids.length){ list.innerHTML='<div class="empty">Zatím nikdo další nesdílí polohu.</div>'; return; }
   list.innerHTML=ids.map(id=>{
     const v=live.peers[id]; const ns=nearestStop(v.la,v.ln);
+    const age=peerAgeMin(v);
+    const ageTxt=age>=PEER_STALE_MIN?` · před ${Math.round(age)} min`:'';
     return `<div class="p" onclick="flyToPeer(${v.la},${v.ln})">
       <span class="e">${v.i||'📍'}</span><span>${(v.n||'?').replace(/[<>]/g,'')}</span>
-      <span class="near">u „${ns.name.split('—')[0].trim()}"</span></div>`;
+      <span class="near">u „${ns.name.split('—')[0].trim()}"${ageTxt}</span></div>`;
   }).join('');
 }
 function flyToPeer(la,ln){ map.setView([la,ln],15); map.invalidateSize(); }
 function stopLive(){
   live.on=false; updateLiveBtn();
+  if(live.tick){clearInterval(live.tick);live.tick=null;}
+  live.lastData=null;
   document.getElementById('peersPanel').classList.remove('show');
   if(live.watch!=null) navigator.geolocation.clearWatch(live.watch);
   if(live.db&&live.uid){ live.db.ref('groups/'+live.group+'/'+live.uid).remove(); live.db.ref('groups/'+live.group).off(); }
